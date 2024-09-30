@@ -1,0 +1,75 @@
+controllerManager:
+  kubeRbacProxy:
+    args:
+      - --secure-listen-address=0.0.0.0:8443
+      - --upstream=http://127.0.0.1:8080/
+      - --logtostderr=true
+      - --v=0
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+    image:
+      repository: gcr.io/kubebuilder/kube-rbac-proxy
+      tag: v0.16.0
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 5m
+        memory: 64Mi
+  manager:
+    args:
+      - --health-probe-bind-address=:8081
+      - --metrics-bind-address=127.0.0.1:8080
+      - --leader-elect
+      - --scrape-interval=30s
+      - --beamlit-gateway-address=http://192.168.1.131:8081
+      - --proxy-listen-port=8000
+      - --default-remote-service-ref-namespace=default
+      - --default-remote-service-ref-name=proxy-svc
+      - --default-remote-service-ref-target-port=8000
+      - --gateway-selectors=app.kubernetes.io/component=proxy,app.kubernetes.io/managed-by=envoy-gateway,app.kubernetes.io/name=envoy,gateway.envoyproxy.io/owning-gateway-name=beamlit-gateway,gateway.envoyproxy.io/owning-gateway-namespace=envoy-gateway-system
+      - --gateway-namespace=envoy-gateway-system
+      - --gateway-name=beamlit-gateway
+      - --gateway-port=8000
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+    image:
+      repository: controller
+      tag: latest
+      pullPolicy: IfNotPresent
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 10m
+        memory: 64Mi
+  podSecurityContext:
+    runAsNonRoot: true
+  replicas: 1
+  serviceAccount:
+    annotations: {}
+kubernetesClusterDomain: cluster.local
+metricsService:
+  ports:
+    - name: https
+      port: 8443
+      protocol: TCP
+      targetPort: https
+  type: ClusterIP
+
+beamlitApiToken: "eee"
+beamlitBaseUrl: "http://192.168.1.131:8080"
+
+gateway:
+  enabled: true
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  namespace: envoy-gateway-system
+  port: 8000

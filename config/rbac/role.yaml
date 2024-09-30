@@ -1,0 +1,48 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - model.beamlit.io
+    resources:
+      - modeldeployments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - model.beamlit.io
+    resources:
+      - modeldeployments/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - model.beamlit.io
+    resources:
+      - modeldeployments/status
+    verbs:
+      - get
+      - patch
+      - update

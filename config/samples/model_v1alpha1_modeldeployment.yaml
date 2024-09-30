@@ -1,0 +1,34 @@
+apiVersion: model.beamlit.io/v1alpha1
+kind: ModelDeployment
+metadata:
+  labels:
+    app.kubernetes.io/name: operator
+    app.kubernetes.io/managed-by: kustomize
+  name: modeldeployment-sample
+spec:
+  displayName: "Model Deployment Sample"
+  enabledLocations:
+    - location: fr-east-lcl
+  environment: prod
+  supportedGPUTypes:
+    - T4
+  modelSourceRef:
+    apiVersion: apps/v1 # mandatory
+    kind: Deployment # mandatory
+    name: php-apache # mandatory
+    namespace: default
+  offloadingConfig:
+    disabled: false
+    behavior:
+      percentage: 50
+    localServiceRef:
+      name: php-apache
+      namespace: default
+      targetPort: 80
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 1
