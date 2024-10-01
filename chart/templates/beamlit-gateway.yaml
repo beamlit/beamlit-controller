@@ -3,7 +3,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
   name: beamlit-gateway-class
-  namespace: {{ .Values.gateway.namespace }}
 spec:
   controllerName: {{ .Values.gateway.controllerName }}
 {{- end }}
@@ -20,4 +19,15 @@ spec:
     - name: http
       protocol: HTTP
       port: {{ .Values.gateway.port }}
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchExpressions:
+            - key: kubernetes.io/metadata.name
+              operator: In
+              values:
+                {{- range $i, $e := .Values.gateway.allowedNamespaces }}
+                - {{ $e }}
+                {{- end }}
 {{- end }}

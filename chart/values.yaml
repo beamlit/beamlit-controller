@@ -28,11 +28,11 @@ controllerManager:
       - --scrape-interval=30s
       - --beamlit-gateway-address=http://192.168.1.131:8081
       - --proxy-listen-port=8000
-      - --default-remote-service-ref-namespace=default
+      - --default-remote-service-ref-namespace=beamlit
       - --default-remote-service-ref-name=proxy-svc
       - --default-remote-service-ref-target-port=8000
-      - --gateway-selectors=app.kubernetes.io/component=proxy,app.kubernetes.io/managed-by=envoy-gateway,app.kubernetes.io/name=envoy,gateway.envoyproxy.io/owning-gateway-name=beamlit-gateway,gateway.envoyproxy.io/owning-gateway-namespace=envoy-gateway-system
-      - --gateway-namespace=envoy-gateway-system
+      - --gateway-selectors=app.kubernetes.io/component=proxy,app.kubernetes.io/managed-by=envoy-gateway,app.kubernetes.io/name=envoy,gateway.envoyproxy.io/owning-gateway-name=beamlit-gateway,gateway.envoyproxy.io/owning-gateway-namespace=beamlit
+      - --gateway-namespace=beamlit
       - --gateway-name=beamlit-gateway
       - --gateway-port=8000
     containerSecurityContext:
@@ -70,6 +70,15 @@ beamlitBaseUrl: "http://192.168.1.131:8080"
 
 gateway:
   enabled: true
+  installGatewayContoller: true # install envoy gateway
   controllerName: gateway.envoyproxy.io/gatewayclass-controller
-  namespace: envoy-gateway-system
+  namespace: beamlit
   port: 8000
+  allowedNamespaces:
+    - default
+
+fullInstall: true
+
+metrics-server:
+  args: # needed for running locally with kind
+    - --kubelet-insecure-tls

@@ -12,3 +12,19 @@ spec:
       protocol: TCP
   selector:
     control-plane: controller-manager
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: proxy-service-reference-grant
+spec:
+  from:
+    {{ range $i, $e := .Values.gateway.allowedNamespaces }}
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: {{ $e }}
+    {{ end }}
+  to:
+    - group: ""
+      kind: Service
+      namespace: beamlit

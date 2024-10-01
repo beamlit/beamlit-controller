@@ -16,7 +16,7 @@ spec:
     apiVersion: apps/v1 # mandatory
     kind: Deployment # mandatory
     name: php-apache # mandatory
-    namespace: default
+    namespace: default # remove
   offloadingConfig:
     disabled: false
     behavior:
@@ -31,4 +31,4 @@ spec:
           name: cpu
           target:
             type: Utilization
-            averageUtilization: 1
+            averageUtilization: 5
