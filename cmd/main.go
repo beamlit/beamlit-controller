@@ -217,10 +217,16 @@ func main() {
 		}
 	}()
 
+	beamlitClient, err := beamlit.NewClient()
+	if err != nil {
+		setupLog.Error(err, "unable to create beamlit client")
+		os.Exit(1)
+	}
+
 	if err = (&controller.ModelDeploymentReconciler{
 		Client:         kubeClient,
 		Scheme:         mgr.GetScheme(),
-		BeamlitClient:  beamlit.NewClient(),
+		BeamlitClient:  beamlitClient,
 		MetricsWatcher: metricsWatcher,
 		Offloader:      offloader,
 		Offloadings:    sync.Map{},
