@@ -159,9 +159,10 @@ func (o *Offloader) Register(ctx context.Context, localServiceRef *modelv1alpha1
 			CommonRouteSpec: gatewayv1.CommonRouteSpec{
 				ParentRefs: []gatewayv1.ParentReference{
 					{
-						Name:  gatewayv1.ObjectName(o.gatewayName),
-						Kind:  createKind("Gateway"),
-						Group: createGroup("gateway.networking.k8s.io"),
+						Name:      gatewayv1.ObjectName(o.gatewayName),
+						Kind:      createKind("Gateway"),
+						Group:     createGroup("gateway.networking.k8s.io"),
+						Namespace: createNamespace(o.gatewayNamespace),
 					},
 				},
 			},
