@@ -41,7 +41,7 @@ spec:
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
-        - name: BEAMLIT_API_TOKEN
+        - name: BEAMLIT_TOKEN
           valueFrom:
             secretKeyRef:
               name: {{ include "chart.fullname" . }}-beamlit-api-token
