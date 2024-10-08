@@ -93,6 +93,20 @@ func (mw *MetricsWatcher) Watch(ctx context.Context, watchTarget v1.ObjectRefere
 	log.FromContext(ctx).Info("Added watcher", "watchTarget", watchTarget, "metric", metric, "conditionDuration", conditionDuration)
 }
 
+func (mw *MetricsWatcher) RemoveWatcher(ctx context.Context, watchTarget v1.ObjectReference) {
+	log.FromContext(ctx).Info("Removing watcher", "watchTarget", watchTarget)
+	for i, watcher := range mw.watchers {
+		if watcher.watchTarget.Name == watchTarget.Name &&
+			watcher.watchTarget.Namespace == watchTarget.Namespace &&
+			watcher.watchTarget.Kind == watchTarget.Kind {
+			mw.watchers[i].cancel()
+			mw.watchers = append(mw.watchers[:i], mw.watchers[i+1:]...)
+			log.FromContext(ctx).Info("Removed watcher", "watchTarget", watchTarget)
+			return
+		}
+	}
+}
+
 // Start begins the metrics watching process
 func (mw *MetricsWatcher) Start(ctx context.Context) {
 	ticker := time.NewTicker(mw.interval)

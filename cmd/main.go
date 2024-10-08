@@ -17,10 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"flag"
-	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -28,6 +26,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
@@ -36,6 +35,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -44,11 +44,11 @@ import (
 	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
 	"github.com/beamlit/operator/internal/beamlit"
 	"github.com/beamlit/operator/internal/controller"
+	"github.com/beamlit/operator/internal/healthcheck"
 	"github.com/beamlit/operator/internal/metrics_watcher"
-	"github.com/beamlit/operator/internal/offloading"
-	"github.com/beamlit/operator/internal/proxy"
+	"github.com/beamlit/operator/internal/service"
 	corev1 "k8s.io/api/core/v1"
-	gatewayv1 "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1"
+	gatewayv1client "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -76,14 +76,16 @@ func main() {
 	var beamlitGatewayAddress string
 	var proxyListenPort int
 
-	var gatewaySelectors string
-	var gatewayNamespace string
-	var gatewayName string
-	var gatewayPort int
-
 	var defaultRemoteServiceRefNamespace string
 	var defaultRemoteServiceRefName string
 	var defaultRemoteServiceRefTargetPort int
+
+	var gatewayServiceRefNamespace string
+	var gatewayServiceRefName string
+	var gatewayServiceRefTargetPort int
+
+	var gatewayName string
+	var gatewayNamespace string
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -102,11 +104,11 @@ func main() {
 	flag.StringVar(&defaultRemoteServiceRefNamespace, "default-remote-service-ref-namespace", "default", "The namespace of the default remote service reference.")
 	flag.StringVar(&defaultRemoteServiceRefName, "default-remote-service-ref-name", "default", "The name of the default remote service reference.")
 	flag.IntVar(&defaultRemoteServiceRefTargetPort, "default-remote-service-ref-target-port", 8000, "The target port of the default remote service reference.")
-	flag.StringVar(&gatewaySelectors, "gateway-selectors", "", "The selectors of the gateway (comma separated)")
-	flag.StringVar(&gatewayNamespace, "gateway-namespace", "default", "The namespace of the gateway.")
-	flag.StringVar(&gatewayName, "gateway-name", "default", "The name of the gateway.")
-	flag.IntVar(&gatewayPort, "gateway-port", 8000, "The port of the gateway.")
-
+	flag.StringVar(&gatewayServiceRefNamespace, "gateway-service-ref-namespace", "default", "The namespace of the gateway service reference.")
+	flag.StringVar(&gatewayServiceRefName, "gateway-service-ref-name", "default", "The name of the gateway service reference.")
+	flag.IntVar(&gatewayServiceRefTargetPort, "gateway-service-ref-target-port", 8000, "The target port of the gateway service reference.")
+	flag.StringVar(&gatewayName, "gateway-name", "beamlit-gateway", "The name of the gateway.")
+	flag.StringVar(&gatewayNamespace, "gateway-namespace", "beamlit", "The namespace of the gateway.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -161,6 +163,9 @@ func main() {
 			DefaultNamespaces: namespacesList,
 		}
 	}
+
+	ctx := ctrl.SetupSignalHandler()
+
 	config, err := ctrl.GetConfig()
 	if err != nil {
 		setupLog.Error(err, "unable to get config")
@@ -171,51 +176,29 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-	kubeClient := mgr.GetClient()
-	metricsWatcher, err := metrics_watcher.NewMetricsWatcher(config, kubeClient, scrapeInterval)
+	metricKubeClient, err := client.New(config, client.Options{})
+	if err != nil {
+		setupLog.Error(err, "unable to create metric kube client")
+		os.Exit(1)
+	}
+	metricsWatcher, err := metrics_watcher.NewMetricsWatcher(config, metricKubeClient, scrapeInterval)
 	if err != nil {
 		setupLog.Error(err, "unable to create metrics watcher")
 		os.Exit(1)
 	}
-	go metricsWatcher.Start(context.Background())
+	go metricsWatcher.Start(ctx)
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		setupLog.Error(err, "unable to create clientset")
 		os.Exit(1)
 	}
-	gatewaySelectorsMap := make(map[string]string)
-	for _, selector := range strings.Split(gatewaySelectors, ",") {
-		parts := strings.Split(selector, "=")
-		if len(parts) != 2 {
-			setupLog.Error(fmt.Errorf("invalid selector format: %s", selector), "invalid selector format")
-			os.Exit(1)
-		}
-		gatewaySelectorsMap[parts[0]] = parts[1]
-	}
 
-	gatewayClient, err := gatewayv1.NewForConfig(config)
+	gatewayClient, err := gatewayv1client.NewForConfig(config)
 	if err != nil {
 		setupLog.Error(err, "unable to create gateway client")
 		os.Exit(1)
 	}
-	offloader, err := offloading.NewOffloader(context.Background(), kubeClient, clientset, gatewayClient, gatewaySelectorsMap, gatewayNamespace, gatewayName, gatewayPort)
-	if err != nil {
-		setupLog.Error(err, "unable to create offloader")
-		os.Exit(1)
-	}
-
-	proxy, err := proxy.NewProxy(beamlitGatewayAddress, proxyListenPort)
-	if err != nil {
-		setupLog.Error(err, "unable to create proxy")
-		os.Exit(1)
-	}
-	go func() {
-		if err := proxy.Serve(context.Background()); err != nil {
-			setupLog.Error(err, "unable to serve proxy")
-			os.Exit(1)
-		}
-	}()
 
 	beamlitClient, err := beamlit.NewClient()
 	if err != nil {
@@ -223,14 +206,45 @@ func main() {
 		os.Exit(1)
 	}
 
+	healthcheckClientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		setupLog.Error(err, "unable to create healthcheck clientset")
+		os.Exit(1)
+	}
+
+	informerFactory := informers.NewSharedInformerFactoryWithOptions(healthcheckClientset, 0)
+
+	serviceController := service.NewServiceController(ctx, clientset)
+	go serviceController.Start(ctx, &modelv1alpha1.ServiceReference{
+		ObjectReference: corev1.ObjectReference{
+			Namespace: defaultRemoteServiceRefNamespace,
+			Name:      defaultRemoteServiceRefName,
+		},
+		TargetPort: int32(defaultRemoteServiceRefTargetPort),
+	}, &modelv1alpha1.ServiceReference{
+		ObjectReference: corev1.ObjectReference{
+			Namespace: gatewayServiceRefNamespace,
+			Name:      gatewayServiceRefName,
+		},
+		TargetPort: int32(gatewayServiceRefTargetPort),
+	})
+
 	if err = (&controller.ModelDeploymentReconciler{
-		Client:         kubeClient,
-		Scheme:         mgr.GetScheme(),
-		BeamlitClient:  beamlitClient,
-		MetricsWatcher: metricsWatcher,
-		Offloader:      offloader,
-		Offloadings:    sync.Map{},
-		Proxy:          proxy,
+		Client:             mgr.GetClient(),
+		Scheme:             mgr.GetScheme(),
+		BeamlitClient:      beamlitClient,
+		MetricsWatcher:     metricsWatcher,
+		HealthManager:      healthcheck.NewManager(ctx, informerFactory),
+		ServiceController:  serviceController,
+		OngoingOffloadings: sync.Map{},
+		GatewayClient:      gatewayClient,
+		Gateway: struct {
+			Name      string
+			Namespace string
+		}{
+			Name:      gatewayName,
+			Namespace: gatewayNamespace,
+		},
 		DefaultRemoteServiceRef: &modelv1alpha1.ServiceReference{
 			ObjectReference: corev1.ObjectReference{
 				Namespace: defaultRemoteServiceRefNamespace,
@@ -254,7 +268,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

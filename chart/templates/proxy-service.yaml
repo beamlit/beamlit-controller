@@ -1,22 +1,35 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: proxy-svc
-  labels:
-    app: proxy
+  name: beamlit-proxy-svc
 spec:
   type: ClusterIP
   ports:
-    - port: 8000
-      targetPort: 8000
+    - port: 8081
+      targetPort: 8081
+      name: http
       protocol: TCP
-  selector:
-    control-plane: controller-manager
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: beamlit-proxy-svc
+  labels:
+    kubernetes.io/service-name: beamlit-proxy-svc
+    endpointslice.kubernetes.io/managed-by: beamlit-operator-helmchart
+addressType: IPv4
+ports:
+  - name: http
+    protocol: TCP
+    port: 8081
+endpoints:
+  - addresses:
+      - {{ .Values.beamlit.proxy.ip }}
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: ReferenceGrant
 metadata:
-  name: proxy-service-reference-grant
+  name: beamlit-proxy-reference-grant
 spec:
   from:
     {{ range $i, $e := .Values.gateway.allowedNamespaces }}

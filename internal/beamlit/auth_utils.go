@@ -88,3 +88,11 @@ func (b *BeamlitToken) client(ctx context.Context) *http.Client {
 
 	return b.cfg.Client(ctx)
 }
+
+func (b *BeamlitToken) GetToken(ctx context.Context) (string, error) {
+	token, err := b.Token(ctx)
+	if err != nil {
+		return "", err
+	}
+	return token.AccessToken, nil
+}

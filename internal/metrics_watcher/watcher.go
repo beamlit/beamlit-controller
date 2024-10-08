@@ -23,10 +23,14 @@ type metricWatcher struct {
 	watchTarget   v1.ObjectReference
 	metric        []autoscalingv2.MetricSpec
 	callback      func(reached bool) error
+	cancel        context.CancelFunc
 }
 
 func (mw *metricWatcher) CheckMetric(ctx context.Context) (bool, error) {
 	var errs []error
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	mw.cancel = cancel
 	for _, metric := range mw.metric {
 		switch metric.Type {
 		case autoscalingv2.ObjectMetricSourceType:
