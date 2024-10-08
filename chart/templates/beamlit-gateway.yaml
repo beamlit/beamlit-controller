@@ -3,6 +3,8 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
   name: beamlit-gateway-class
+  labels:
+    app.kubernetes.io/managed-by: beamlit-operator-helmchart
 spec:
   controllerName: {{ .Values.gateway.controllerName }}
 {{- end }}
@@ -13,6 +15,8 @@ kind: Gateway
 metadata:
   name: beamlit-gateway
   namespace: {{ .Values.gateway.namespace }}
+  labels:
+    app.kubernetes.io/managed-by: beamlit-operator-helmchart
 spec:
   gatewayClassName: beamlit-gateway-class
   listeners:
@@ -30,4 +34,25 @@ spec:
                 {{- range $i, $e := .Values.gateway.allowedNamespaces }}
                 - {{ $e }}
                 {{- end }}
+{{- end }}
+---
+{{- if .Values.gateway.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: beamlit-gateway-copy-svc
+  namespace: {{ .Values.gateway.namespace }}
+  labels:
+    app.kubernetes.io/managed-by: beamlit-operator-helmchart
+spec:
+  type: ClusterIP
+  selector:
+    {{- range $i, $e := .Values.gateway.selectors }}
+    {{ $e | splitList "=" | first }}: {{ $e | splitList "=" | last }}
+    {{ end }}
+  ports:
+    - port: {{ .Values.gateway.port }}
+      targetPort: {{ .Values.gateway.port }}
+      name: default
+      protocol: TCP
 {{- end }}
