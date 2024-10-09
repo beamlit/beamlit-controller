@@ -1,21 +1,95 @@
-package service
+/*
+Copyright 2024.
 
-//TODO: support app protocol
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package configurer
 
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/watch"
 	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 	discoveryv1apply "k8s.io/client-go/applyconfigurations/discovery/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 )
 
-func (s *serviceController) Register(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
+type kubernetesConfigurer struct {
+	gatewayServiceRef             *modelv1alpha1.ServiceReference
+	proxyServiceRef               *modelv1alpha1.ServiceReference
+	kubeClient                    kubernetes.Interface
+	beamlitServicesByModelService map[types.NamespacedName]*types.NamespacedName
+	serviceInformer               cache.SharedIndexInformer
+}
+
+func newKubernetesConfigurer(ctx context.Context, kubeClient kubernetes.Interface) (Configurer, error) {
+	return &kubernetesConfigurer{
+		kubeClient: kubeClient,
+		serviceInformer: cache.NewSharedIndexInformer(
+			&cache.ListWatch{
+				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+					return kubeClient.CoreV1().Services("").List(ctx, options)
+				},
+				WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+					return kubeClient.CoreV1().Services("").Watch(ctx, options)
+				},
+			},
+			&corev1.Service{},
+			0,
+			cache.Indexers{},
+		),
+		beamlitServicesByModelService: make(map[types.NamespacedName]*types.NamespacedName),
+	}, nil
+}
+
+func (s *kubernetesConfigurer) Start(ctx context.Context, proxyService *modelv1alpha1.ServiceReference, gatewayService *modelv1alpha1.ServiceReference) error {
+	s.proxyServiceRef = proxyService
+	s.gatewayServiceRef = gatewayService
+	go s.serviceInformer.Run(ctx.Done())
+	return nil
+}
+
+func (s *kubernetesConfigurer) GetLocalBeamlitService(ctx context.Context, service *modelv1alpha1.ServiceReference) (*modelv1alpha1.ServiceReference, error) {
+	serviceKey := types.NamespacedName{
+		Namespace: service.Namespace,
+		Name:      service.Name,
+	}
+	serviceRef, ok := s.beamlitServicesByModelService[serviceKey]
+	if !ok {
+		return nil, fmt.Errorf("proxy service not found for model service %s", serviceKey.String())
+	}
+
+	return &modelv1alpha1.ServiceReference{
+		ObjectReference: corev1.ObjectReference{
+			Namespace: serviceRef.Namespace,
+			Name:      serviceRef.Name,
+		},
+		TargetPort: service.TargetPort,
+	}, nil
+}
+
+func (s *kubernetesConfigurer) Configure(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
 	beamlitService, err := s.createBeamlitModelService(ctx, serviceRef)
 	if err != nil {
 		return err
@@ -55,7 +129,7 @@ func (s *serviceController) Register(ctx context.Context, serviceRef *modelv1alp
 	return nil
 }
 
-func (s *serviceController) createBeamlitModelService(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) (*corev1.Service, error) {
+func (s *kubernetesConfigurer) createBeamlitModelService(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) (*corev1.Service, error) {
 	serviceToConfigure, err := s.kubeClient.CoreV1().Services(serviceRef.Namespace).Get(ctx, serviceRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -92,7 +166,7 @@ func (s *serviceController) createBeamlitModelService(ctx context.Context, servi
 // addPortToGatewayService adds a port to the gateway service.
 // It checks if the port already exists, and if it does, it returns.
 // Otherwise, it adds the port to the gateway service.
-func (s *serviceController) addPortToGatewayService(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
+func (s *kubernetesConfigurer) addPortToGatewayService(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
 	gatewayService, err := s.kubeClient.CoreV1().Services(s.gatewayServiceRef.Namespace).Get(ctx, s.gatewayServiceRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -135,7 +209,7 @@ func (s *serviceController) addPortToGatewayService(ctx context.Context, service
 
 // takeOverEndpointsSlice takes over the endpoints slice for a given service reference.
 // It updates the label of the endpoints slice.
-func (s *serviceController) takeOverEndpointsSlices(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
+func (s *kubernetesConfigurer) takeOverEndpointsSlices(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
 	userServiceEndpoints, err := s.kubeClient.DiscoveryV1().EndpointSlices(serviceRef.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: "kubernetes.io/service-name=" + serviceRef.Name,
 	})
@@ -157,7 +231,7 @@ func (s *serviceController) takeOverEndpointsSlices(ctx context.Context, service
 
 // createMirroredEndpointsSlice creates a mirrored endpoints slice for a given service reference.
 // It mirrors the endpoints slice of the model beamlit service created for the user service, minus the service target port.
-func (s *serviceController) createMirroredEndpointsSlice(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference, targetPort int32) error {
+func (s *kubernetesConfigurer) createMirroredEndpointsSlice(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference, targetPort int32) error {
 	mirroredEndpointsSlice, err := s.kubeClient.DiscoveryV1().EndpointSlices(serviceRef.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: "kubernetes.io/service-name=" + fmt.Sprintf("%s-beamlit", serviceRef.Name),
 	})
@@ -231,7 +305,7 @@ func (s *serviceController) createMirroredEndpointsSlice(ctx context.Context, se
 	return nil
 }
 
-func (s *serviceController) cleanUnusedEndpointSlices(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
+func (s *kubernetesConfigurer) cleanUnusedEndpointSlices(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
 	userServiceEndpoints, err := s.kubeClient.DiscoveryV1().EndpointSlices(serviceRef.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: "kubernetes.io/service-name=" + serviceRef.Name,
 	})
@@ -250,6 +324,94 @@ func (s *serviceController) cleanUnusedEndpointSlices(ctx context.Context, servi
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (s *kubernetesConfigurer) Unconfigure(ctx context.Context, service *modelv1alpha1.ServiceReference) error {
+	if value, ok := s.beamlitServicesByModelService[types.NamespacedName{Namespace: service.Namespace, Name: service.Name}]; !ok || value == nil {
+		return nil
+	}
+	err := s.addKubernetesManagedEndpointsSlice(ctx, service)
+	if err != nil {
+		return err
+	}
+	err = s.deleteBeamlitEndpointsSlice(ctx, service)
+	if err != nil {
+		return err
+	}
+	err = s.deleteExternalIPsFromGatewayService(ctx, service)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *kubernetesConfigurer) deleteBeamlitService(ctx context.Context, service *modelv1alpha1.ServiceReference) error {
+	beamlitService, ok := s.beamlitServicesByModelService[types.NamespacedName{Namespace: service.Namespace, Name: service.Name}]
+	if !ok {
+		return fmt.Errorf("beamlit service not found for model service %s", service.Name)
+	}
+	delete(s.beamlitServicesByModelService, types.NamespacedName{Namespace: service.Namespace, Name: service.Name})
+	return s.kubeClient.CoreV1().Services(beamlitService.Namespace).Delete(ctx, beamlitService.Name, metav1.DeleteOptions{})
+}
+
+func (s *kubernetesConfigurer) addKubernetesManagedEndpointsSlice(ctx context.Context, service *modelv1alpha1.ServiceReference) error {
+	_, err := s.kubeClient.DiscoveryV1().EndpointSlices(service.Namespace).Create(ctx, &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s-kubernetes-managed", service.Name),
+			Labels: map[string]string{
+				"kubernetes.io/service-name":             service.Name,
+				"endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+			},
+		},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints:   []discoveryv1.Endpoint{},
+		Ports:       []discoveryv1.EndpointPort{},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *kubernetesConfigurer) deleteBeamlitEndpointsSlice(ctx context.Context, service *modelv1alpha1.ServiceReference) error {
+	endpointSlices, err := s.kubeClient.DiscoveryV1().EndpointSlices(service.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "kubernetes.io/service-name=" + service.Name,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, endpointSlice := range endpointSlices.Items {
+		if value, ok := endpointSlice.Labels["endpointslice.kubernetes.io/managed-by"]; ok && value == "beamlit-operator" {
+			return s.kubeClient.DiscoveryV1().EndpointSlices(service.Namespace).Delete(ctx, endpointSlice.Name, metav1.DeleteOptions{})
+		}
+	}
+	return nil
+}
+
+func (s *kubernetesConfigurer) deleteExternalIPsFromGatewayService(ctx context.Context, service *modelv1alpha1.ServiceReference) error {
+	gatewayService, err := s.kubeClient.CoreV1().Services(s.gatewayServiceRef.Namespace).Get(ctx, s.gatewayServiceRef.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	userService, err := s.kubeClient.CoreV1().Services(service.Namespace).Get(ctx, service.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	var externalIPs []string
+	for _, externalIP := range gatewayService.Spec.ExternalIPs {
+		if !slices.Contains(userService.Spec.ClusterIPs, externalIP) {
+			externalIPs = append(externalIPs, externalIP)
+		}
+	}
+	gatewayService.Spec.ExternalIPs = externalIPs
+	_, err = s.kubeClient.CoreV1().Services(s.gatewayServiceRef.Namespace).Update(ctx, gatewayService, metav1.UpdateOptions{})
+	if err != nil {
+		return err
 	}
 	return nil
 }

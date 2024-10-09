@@ -1,4 +1,20 @@
-package metrics_watcher
+/*
+Copyright 2024.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package metric
 
 import (
 	"context"
@@ -7,15 +23,17 @@ import (
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes"
 	scaleclient "k8s.io/client-go/scale"
-	client "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func IsEqual(a autoscalingv2.MetricSpec, b autoscalingv2.MetricSpec) bool {
+// IsMetricSpecEqual checks if two metric specs are deeply equal (no pointer comparison).
+// It returns true if the two metric specs are equal, false otherwise.
+func IsMetricSpecEqual(a autoscalingv2.MetricSpec, b autoscalingv2.MetricSpec) bool {
 	if a.Type != b.Type {
 		return false
 	}
@@ -93,11 +111,10 @@ func equalMetricTarget(a autoscalingv2.MetricTarget, b autoscalingv2.MetricTarge
 	return false
 }
 
-func getReplicasInfo(ctx context.Context, kubernetesClient client.Client, scaleClient scaleclient.ScalesGetter, watchTarget *v1.ObjectReference) (int32, labels.Selector, error) {
-	log.FromContext(ctx).Info("getReplicasInfo", "watchTarget", watchTarget)
+// getReplicasInfo gets the number of replicas and the selector of a given Kubernetes resource.
+func getReplicasInfo(ctx context.Context, restMapper meta.RESTMapper, scaleClient scaleclient.ScalesGetter, watchTarget *v1.ObjectReference) (int32, labels.Selector, error) {
 	targetGroupVersion, err := schema.ParseGroupVersion(watchTarget.APIVersion)
 	if err != nil {
-		log.FromContext(ctx).Error(err, "Error parsing group version")
 		return 0, nil, err
 	}
 
@@ -106,9 +123,8 @@ func getReplicasInfo(ctx context.Context, kubernetesClient client.Client, scaleC
 		Kind:  watchTarget.Kind,
 	}
 
-	mapper, err := kubernetesClient.RESTMapper().RESTMappings(targetGK)
+	mapper, err := restMapper.RESTMappings(targetGK)
 	if err != nil {
-		log.FromContext(ctx).Error(err, "Error getting REST mappings")
 		return 0, nil, err
 	}
 
@@ -118,23 +134,19 @@ func getReplicasInfo(ctx context.Context, kubernetesClient client.Client, scaleC
 		if err == nil {
 			selector, err := parseHPASelector(scale.Status.Selector)
 			if err != nil {
-				log.FromContext(ctx).Error(err, "Error parsing selector")
 				return 0, nil, err
 			}
 			return scale.Status.Replicas, selector, nil
 		}
 		if i == 0 {
-			log.FromContext(ctx).Error(err, "Error getting scale")
 			firstErr = err
 		}
 	}
 
 	if firstErr != nil {
-		log.FromContext(ctx).Error(firstErr, "Error getting replicas info")
 		return 0, nil, firstErr
 	}
 
-	log.FromContext(ctx).Error(fmt.Errorf("failed to get replicas info for %s", watchTarget.Name), "Error getting replicas info")
 	return 0, nil, fmt.Errorf("failed to get replicas info for %s", watchTarget.Name)
 }
 
@@ -150,10 +162,9 @@ func parseHPASelector(selector string) (labels.Selector, error) {
 	return parsedSelector, nil
 }
 
-func findRequestedResource(ctx context.Context, kubeClient client.Client, namespace string, labelSelector labels.Selector, resourceName v1.ResourceName) (int64, error) {
+func findRequestedResource(ctx context.Context, kubeClient kubernetes.Interface, namespace string, labelSelector labels.Selector, resourceName v1.ResourceName) (int64, error) {
 	// get pod requests
-	podList := &v1.PodList{}
-	err := kubeClient.List(ctx, podList, client.InNamespace(namespace), client.MatchingLabelsSelector{Selector: labelSelector})
+	podList, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector.String()})
 	if err != nil {
 		return 0, err
 	}
@@ -174,4 +185,36 @@ func findRequestedResource(ctx context.Context, kubeClient client.Client, namesp
 	}
 
 	return requestedResource, nil
+}
+
+func isMetricReached(replicas int32, metric autoscalingv2.MetricTarget, metrics []int64) (bool, error) {
+	switch metric.Type {
+	case autoscalingv2.UtilizationMetricType:
+		if metric.AverageUtilization == nil {
+			return false, fmt.Errorf("averageUtilization is nil")
+		}
+		averageUtilization := int64(0)
+		for _, metric := range metrics {
+			averageUtilization += metric
+		}
+		averageUtilization /= int64(replicas)
+		return averageUtilization >= int64(*metric.AverageUtilization), nil
+	case autoscalingv2.ValueMetricType:
+		metricValue := int64(0)
+		for _, m := range metrics {
+			if metric.Value != nil {
+				metricValue += m
+			}
+		}
+		return metric.Value.CmpInt64(metricValue) >= 0, nil
+	case autoscalingv2.AverageValueMetricType:
+		averageValue := int64(0)
+		for _, metric := range metrics {
+			averageValue += metric
+		}
+		averageValue /= int64(replicas)
+		return metric.AverageValue.CmpInt64(averageValue) >= 0, nil
+	default:
+		return false, fmt.Errorf("unsupported metric type: %s", metric.Type)
+	}
 }
