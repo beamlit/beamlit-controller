@@ -42,6 +42,9 @@ type Location struct {
 	MaxNumReplicas *int   `json:"max_num_replicas"`
 }
 
+// CreateOrUpdateModelDeployment creates or updates a model deployment on Beamlit
+// It returns the updated model deployment on Beamlit
+// It returns an error if the request fails, or if the response status is not 200 - OK
 func (c *Client) CreateOrUpdateModelDeployment(ctx context.Context, modelDeployment *ModelDeployment) (*ModelDeployment, error) {
 	body := new(bytes.Buffer)
 	if err := json.NewEncoder(body).Encode(modelDeployment); err != nil {
@@ -64,6 +67,9 @@ func (c *Client) CreateOrUpdateModelDeployment(ctx context.Context, modelDeploym
 	return updatedModelDeployment, nil
 }
 
+// DeleteModelDeployment deletes a model deployment on Beamlit
+// It returns an error if the request fails, or if the response status is not 200 - OK
+// It returns nil if the model deployment is not found
 func (c *Client) DeleteModelDeployment(ctx context.Context, name string) error {
 	resp, err := c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("%s/%s", modelDeploymentsPath, name), nil)
 	if err != nil {

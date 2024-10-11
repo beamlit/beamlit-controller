@@ -36,6 +36,10 @@ func NewBeamlitToken() (*BeamlitToken, error) {
 	}, nil
 }
 
+// retrieveInfoFromEnv retrieves the clientID, clientSecret, and baseURL from the environment variables.
+// It returns the clientID, clientSecret, and baseURL as strings.
+// It returns no error if the environment variables are not set.
+// It returns an error if the Beamlit token is not base64 encoded, or if the token is not in the format clientID:clientSecret
 func retrieveInfoFromEnv() (string, string, string, error) {
 	var baseURL string
 	var beamlitToken string
@@ -61,19 +65,6 @@ func retrieveInfoFromEnv() (string, string, string, error) {
 	return splitToken[0], splitToken[1], baseURL, nil
 }
 
-func (b *BeamlitToken) Token(ctx context.Context) (*oauth2.Token, error) {
-	if b.cfg == nil {
-		b.cfg = &clientcredentials.Config{
-			ClientID:     b.clientID,
-			ClientSecret: b.clientSecret,
-			TokenURL:     fmt.Sprintf("%s/oauth/token", b.baseURL),
-			AuthStyle:    oauth2.AuthStyleInHeader,
-		}
-	}
-
-	return b.cfg.Token(ctx)
-}
-
 // client is set private to prevent users from using it directly.
 // Use NewClient() to get a new client.
 func (b *BeamlitToken) client(ctx context.Context) *http.Client {
@@ -89,8 +80,19 @@ func (b *BeamlitToken) client(ctx context.Context) *http.Client {
 	return b.cfg.Client(ctx)
 }
 
+// GetToken retrieves the access token, and refreshes it if it is expired, from the Beamlit API using the client credentials flow
+// It returns the access token as a string. The token is not refreshed automatically,
+// so the caller must refresh the token when it is expired by calling this function again.
 func (b *BeamlitToken) GetToken(ctx context.Context) (string, error) {
-	token, err := b.Token(ctx)
+	if b.cfg == nil {
+		b.cfg = &clientcredentials.Config{
+			ClientID:     b.clientID,
+			ClientSecret: b.clientSecret,
+			TokenURL:     fmt.Sprintf("%s/oauth/token", b.baseURL),
+			AuthStyle:    oauth2.AuthStyleInHeader,
+		}
+	}
+	token, err := b.cfg.Token(ctx)
 	if err != nil {
 		return "", err
 	}

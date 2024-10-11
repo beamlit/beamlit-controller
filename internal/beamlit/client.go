@@ -36,6 +36,9 @@ func NewClient() (*Client, error) {
 	}, nil
 }
 
+// doRequest is a helper function to make a request to the Beamlit API
+// It returns the response from the Beamlit API
+// It returns an error if the request fails
 func (c *Client) doRequest(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, fmt.Sprintf("%s/%s", c.baseURL, path), body)
 	if err != nil {
