@@ -22,6 +22,7 @@ import (
 
 	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
 	"github.com/beamlit/operator/internal/beamlit"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -138,7 +139,10 @@ func (o *gatewayAPIOffloader) Cleanup(ctx context.Context, model *modelv1alpha1.
 	}
 	err := o.gatewayClient.GatewayV1().HTTPRoutes(httpRoute.Namespace).Delete(ctx, httpRoute.Name, metav1.DeleteOptions{})
 	if err != nil {
-		return err
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
 	}
+	delete(o.httpRoutes, model.Namespace)
 	return nil
 }
