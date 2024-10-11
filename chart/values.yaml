@@ -26,15 +26,15 @@ controllerManager:
       - --metrics-bind-address=127.0.0.1:8080
       - --leader-elect
       - --scrape-interval=30s
-      - --beamlit-gateway-address=http://192.168.1.131:8081
-      - --proxy-listen-port=8000
+      - --zap-log-level=2
       - --default-remote-service-ref-namespace=beamlit
-      - --default-remote-service-ref-name=proxy-svc
-      - --default-remote-service-ref-target-port=8000
-      - --gateway-selectors=app.kubernetes.io/component=proxy,app.kubernetes.io/managed-by=envoy-gateway,app.kubernetes.io/name=envoy,gateway.envoyproxy.io/owning-gateway-name=beamlit-gateway,gateway.envoyproxy.io/owning-gateway-namespace=beamlit
-      - --gateway-namespace=beamlit
+      - --default-remote-service-ref-name=beamlit-proxy-svc
+      - --default-remote-service-ref-target-port=8081
+      - --gateway-service-ref-namespace=beamlit
+      - --gateway-service-ref-name=beamlit-gateway-copy-svc
+      - --gateway-service-ref-target-port=8000
       - --gateway-name=beamlit-gateway
-      - --gateway-port=8000
+      - --gateway-namespace=beamlit
     containerSecurityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -65,17 +65,27 @@ metricsService:
       targetPort: https
   type: ClusterIP
 
-beamlitApiToken: "eee"
-beamlitBaseUrl: "http://192.168.1.131:8080"
+beamlit:
+  proxy:
+    fqdn: "gateway-fqdn"
+    port: 8081
+
+beamlitApiToken: "beamlit-api-token"
+beamlitBaseUrl: "beamlit-base-url"
 
 gateway:
   enabled: true
-  installGatewayContoller: true # install envoy gateway
   controllerName: gateway.envoyproxy.io/gatewayclass-controller
   namespace: beamlit
   port: 8000
   allowedNamespaces:
     - default
+  selectors:
+    - app.kubernetes.io/component=proxy
+    - app.kubernetes.io/managed-by=envoy-gateway
+    - app.kubernetes.io/name=envoy
+    - gateway.envoyproxy.io/owning-gateway-name=beamlit-gateway
+    - gateway.envoyproxy.io/owning-gateway-namespace=beamlit
 
 fullInstall: true
 
