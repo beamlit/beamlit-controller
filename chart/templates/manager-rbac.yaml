@@ -130,4 +130,5 @@ subjects:
 - kind: ServiceAccount
   name: '{{ include "chart.fullname" $ }}-controller-manager'
   namespace: {{ $.Release.Namespace }}
+---
 {{- end }}
