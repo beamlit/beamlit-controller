@@ -24,14 +24,11 @@ import (
 	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/apimachinery/pkg/watch"
 	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 	discoveryv1apply "k8s.io/client-go/applyconfigurations/discovery/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 type kubernetesConfigurer struct {
@@ -40,26 +37,12 @@ type kubernetesConfigurer struct {
 	kubeClient                     kubernetes.Interface
 	beamlitServicesByModelService  map[types.NamespacedName]*types.NamespacedName
 	initialEndpointPerLocalService map[types.NamespacedName][]*types.NamespacedName
-	serviceInformer                cache.SharedIndexInformer
 	stopChans                      map[types.NamespacedName][]chan bool
 }
 
 func newKubernetesConfigurer(ctx context.Context, kubeClient kubernetes.Interface) (Configurer, error) {
 	return &kubernetesConfigurer{
-		kubeClient: kubeClient,
-		serviceInformer: cache.NewSharedIndexInformer(
-			&cache.ListWatch{
-				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-					return kubeClient.CoreV1().Services("").List(ctx, options)
-				},
-				WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-					return kubeClient.CoreV1().Services("").Watch(ctx, options)
-				},
-			},
-			&corev1.Service{},
-			0,
-			cache.Indexers{},
-		),
+		kubeClient:                     kubeClient,
 		beamlitServicesByModelService:  make(map[types.NamespacedName]*types.NamespacedName),
 		stopChans:                      make(map[types.NamespacedName][]chan bool),
 		initialEndpointPerLocalService: make(map[types.NamespacedName][]*types.NamespacedName),
@@ -69,7 +52,6 @@ func newKubernetesConfigurer(ctx context.Context, kubeClient kubernetes.Interfac
 func (s *kubernetesConfigurer) Start(ctx context.Context, proxyService *modelv1alpha1.ServiceReference, gatewayService *modelv1alpha1.ServiceReference) error {
 	s.proxyServiceRef = proxyService
 	s.gatewayServiceRef = gatewayService
-	go s.serviceInformer.Run(ctx.Done())
 	return nil
 }
 

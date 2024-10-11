@@ -75,7 +75,7 @@ func (k *k8sHealthInformer) Register(ctx context.Context, model string, resource
 		watchTarget:     resource,
 		healthChan:      k.healthChan,
 		errChan:         k.errChan,
-		informerFactory: kubeinformers.NewSharedInformerFactoryWithOptions(k.clientset, 0),
+		informerFactory: kubeinformers.NewSharedInformerFactoryWithOptions(k.clientset, 0, kubeinformers.WithNamespace(resource.Namespace)),
 	}
 	go k.watchers[model].start(ctx)
 }
