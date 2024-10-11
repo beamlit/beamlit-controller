@@ -35,6 +35,7 @@ controllerManager:
       - --gateway-service-ref-target-port=8000
       - --gateway-name=beamlit-gateway
       - --gateway-namespace=beamlit
+      - --namespaces=beamlit
     containerSecurityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -79,7 +80,7 @@ gateway:
   namespace: beamlit
   port: 8000
   allowedNamespaces:
-    - default
+    - beamlit
   selectors:
     - app.kubernetes.io/component=proxy
     - app.kubernetes.io/managed-by=envoy-gateway
