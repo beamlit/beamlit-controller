@@ -18,11 +18,8 @@ import (
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func toIntPtr(i int) *int {
-	if i == 0 {
-		return nil
-	}
-	return &i
+func toPtr[T any](v T) *T {
+	return &v
 }
 
 func createKind(kind string) *gatewayv1.Kind {

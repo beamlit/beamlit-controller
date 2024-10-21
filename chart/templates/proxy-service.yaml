@@ -17,7 +17,7 @@ metadata:
   labels:
     kubernetes.io/service-name: beamlit-proxy-svc
     endpointslice.kubernetes.io/managed-by: beamlit-operator-helmchart
-addressType: FQDN
+addressType: IPv4
 ports:
   - name: http
     protocol: TCP

@@ -141,7 +141,13 @@ func (k *k8sMetricInformer) Register(ctx context.Context, model string, metrics 
 			metricsClient:    k.metricsClient,
 		},
 		model:          model,
+		metrics:        metrics,
 		scrapeInterval: scrapeInterval,
+		watchTarget:    resource,
+		metricChan:     k.metricChan,
+		errChan:        k.errChan,
+		latestStatus:   MetricStatus{},
+		cancel:         nil,
 		condition: metricConditionStatus{
 			currentMetricReachedMetrics: make([]autoscalingv2.MetricSpec, 0),
 			window:                      window,
@@ -275,7 +281,6 @@ func (mw *k8sMetricWatcher) CheckMetric(ctx context.Context) (bool, error) {
 				mw.condition.update(metric, reached)
 			}
 		case autoscalingv2.ResourceMetricSourceType: // only case with averageUtilization
-			log.FromContext(ctx).Info("ResourceMetricSourceType", "metric", metric)
 			if metric.Resource == nil {
 				errs = append(errs, fmt.Errorf("metric %s is not valid", metric.Resource.Name))
 				continue
