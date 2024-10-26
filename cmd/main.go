@@ -19,10 +19,11 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -42,14 +43,15 @@ import (
 
 	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
 	"github.com/beamlit/operator/internal/beamlit"
+	"github.com/beamlit/operator/internal/config"
 	"github.com/beamlit/operator/internal/controller"
 	"github.com/beamlit/operator/internal/dataplane/configurer"
 	"github.com/beamlit/operator/internal/dataplane/offloader"
 	"github.com/beamlit/operator/internal/informers/health"
 	"github.com/beamlit/operator/internal/informers/metric"
+	beamlitclientset "github.com/tmp-moon/beamlit-proxy/clientset"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	gatewayclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -66,50 +68,9 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	var secureMetrics bool
-	var enableHTTP2 bool
-	var namespaces string
-	var scrapeInterval time.Duration
+	var cfgPath string
+	flag.StringVar(&cfgPath, "config", "", "Path to the config file")
 
-	var beamlitGatewayAddress string
-	var proxyListenPort int
-
-	var defaultRemoteServiceRefNamespace string
-	var defaultRemoteServiceRefName string
-	var defaultRemoteServiceRefTargetPort int
-
-	var gatewayServiceRefNamespace string
-	var gatewayServiceRefName string
-	var gatewayServiceRefTargetPort int
-
-	var gatewayName string
-	var gatewayNamespace string
-
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	flag.BoolVar(&secureMetrics, "metrics-secure", false,
-		"If set the metrics endpoint is served securely")
-	flag.BoolVar(&enableHTTP2, "enable-http2", false,
-		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	flag.StringVar(&namespaces, "namespaces", "", "The namespaces to watch for resources (comma separated)")
-
-	flag.DurationVar(&scrapeInterval, "scrape-interval", 30*time.Second, "The interval at which to scrape metrics")
-	flag.StringVar(&beamlitGatewayAddress, "beamlit-gateway-address", "0.0.0.0", "The address the beamlit gateway binds to.")
-	flag.IntVar(&proxyListenPort, "proxy-listen-port", 8000, "The port the proxy listens on.")
-	flag.StringVar(&defaultRemoteServiceRefNamespace, "default-remote-service-ref-namespace", "default", "The namespace of the default remote service reference.")
-	flag.StringVar(&defaultRemoteServiceRefName, "default-remote-service-ref-name", "default", "The name of the default remote service reference.")
-	flag.IntVar(&defaultRemoteServiceRefTargetPort, "default-remote-service-ref-target-port", 8000, "The target port of the default remote service reference.")
-	flag.StringVar(&gatewayServiceRefNamespace, "gateway-service-ref-namespace", "default", "The namespace of the gateway service reference.")
-	flag.StringVar(&gatewayServiceRefName, "gateway-service-ref-name", "default", "The name of the gateway service reference.")
-	flag.IntVar(&gatewayServiceRefTargetPort, "gateway-service-ref-target-port", 8000, "The target port of the gateway service reference.")
-	flag.StringVar(&gatewayName, "gateway-name", "beamlit-gateway", "The name of the gateway.")
-	flag.StringVar(&gatewayNamespace, "gateway-namespace", "beamlit", "The namespace of the gateway.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -117,6 +78,20 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	cfg := &config.Config{}
+	cfg.Default()
+	cfgFile, err := os.OpenFile(cfgPath, os.O_RDONLY, 0)
+	if err != nil {
+		setupLog.Error(err, "unable to open config file")
+		os.Exit(1)
+	}
+	defer cfgFile.Close()
+	cfg.FromFile(cfgPath, cfgFile)
+	if err := cfg.Validate(); err != nil {
+		setupLog.Error(err, "invalid config")
+		os.Exit(1)
+	}
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -130,7 +105,7 @@ func main() {
 	}
 
 	tlsOpts := []func(*tls.Config){}
-	if !enableHTTP2 {
+	if !*cfg.EnableHTTP2 {
 		tlsOpts = append(tlsOpts, disableHTTP2)
 	}
 
@@ -141,19 +116,19 @@ func main() {
 	ctrlOpts := ctrl.Options{
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
-			BindAddress:   metricsAddr,
-			SecureServing: secureMetrics,
+			BindAddress:   *cfg.MetricsAddr,
+			SecureServing: *cfg.SecureMetrics,
 			TLSOpts:       tlsOpts,
 		},
 		WebhookServer:          webhookServer,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
+		HealthProbeBindAddress: *cfg.ProbeAddr,
+		LeaderElection:         *cfg.EnableLeaderElection,
 		LeaderElectionID:       "0e22b10b.beamlit.io",
 	}
 
 	namespacesList := make(map[string]cache.Config)
-	if namespaces != "" {
-		for _, ns := range strings.Split(namespaces, ",") {
+	if *cfg.Namespaces != "" {
+		for _, ns := range strings.Split(*cfg.Namespaces, ",") {
 			namespacesList[ns] = cache.Config{}
 		}
 	}
@@ -211,50 +186,51 @@ func main() {
 
 	go configurer.Start(ctx, &modelv1alpha1.ServiceReference{
 		ObjectReference: corev1.ObjectReference{
-			Namespace: defaultRemoteServiceRefNamespace,
-			Name:      defaultRemoteServiceRefName,
+			Namespace: *cfg.ProxyService.Namespace,
+			Name:      *cfg.ProxyService.Name,
 		},
-		TargetPort: int32(defaultRemoteServiceRefTargetPort),
-	}, &modelv1alpha1.ServiceReference{
-		ObjectReference: corev1.ObjectReference{
-			Namespace: gatewayServiceRefNamespace,
-			Name:      gatewayServiceRefName,
-		},
-		TargetPort: int32(gatewayServiceRefTargetPort),
+		TargetPort: int32(*cfg.ProxyService.Port),
 	})
 
-	gatewayClient, err := gatewayclient.NewForConfig(config)
-	if err != nil {
-		setupLog.Error(err, "unable to create gateway client")
-		os.Exit(1)
-	}
-
-	offloader, err := offloader.NewOffloader(ctx, offloader.GatewayAPIOffloaderType, clientset, gatewayClient, gatewayName, gatewayNamespace)
+	offloader, err := offloader.NewOffloader(ctx, offloader.BeamlitGatewayOffloaderType, clientset, beamlitclientset.NewClientSet(http.DefaultClient, fmt.Sprintf("%s.%s.svc.cluster.local:%d", *cfg.ProxyService.Name, *cfg.ProxyService.Namespace, *cfg.ProxyService.AdminPort)))
 	if err != nil {
 		setupLog.Error(err, "unable to create offloader")
 		os.Exit(1)
 	}
 
 	ctrl := &controller.ModelDeploymentReconciler{
-		Client:             mgr.GetClient(),
-		Scheme:             mgr.GetScheme(),
-		BeamlitClient:      beamlitClient,
-		MetricInformer:     metricInformer,
-		MetricStatusChan:   metricChan,
-		Configurer:         configurer,
-		HealthInformer:     healthInformer,
-		HealthStatusChan:   healthChan,
-		Offloader:          offloader,
-		ManagedModels:      make(map[string]v1.ObjectReference),
-		OngoingOffloadings: sync.Map{},
-		DefaultRemoteServiceRef: &modelv1alpha1.ServiceReference{
-			ObjectReference: corev1.ObjectReference{
-				Namespace: defaultRemoteServiceRefNamespace,
-				Name:      defaultRemoteServiceRefName,
-			},
-			TargetPort: int32(defaultRemoteServiceRefTargetPort),
-		},
-		BeamlitModels: make(map[string]string),
+		Client:               mgr.GetClient(),
+		Scheme:               mgr.GetScheme(),
+		BeamlitClient:        beamlitClient,
+		MetricInformer:       metricInformer,
+		MetricStatusChan:     metricChan,
+		Configurer:           configurer,
+		HealthInformer:       healthInformer,
+		HealthStatusChan:     healthChan,
+		Offloader:            offloader,
+		ManagedModels:        make(map[string]v1.ObjectReference),
+		OngoingOffloadings:   sync.Map{},
+		ModelState:           sync.Map{},
+		DefaultRemoteBackend: nil,
+		BeamlitModels:        make(map[string]string),
+	}
+
+	if cfg.DefaultRemoteBackend.Host != nil {
+		ctrl.DefaultRemoteBackend = &modelv1alpha1.RemoteBackend{
+			Host: *cfg.DefaultRemoteBackend.Host,
+		}
+		if cfg.DefaultRemoteBackend.AuthConfig != nil {
+			ctrl.DefaultRemoteBackend.AuthConfig = cfg.DefaultRemoteBackend.AuthConfig
+		}
+		if cfg.DefaultRemoteBackend.Scheme != nil {
+			ctrl.DefaultRemoteBackend.Scheme = *cfg.DefaultRemoteBackend.Scheme
+		}
+		if cfg.DefaultRemoteBackend.PathPrefix != nil {
+			ctrl.DefaultRemoteBackend.PathPrefix = *cfg.DefaultRemoteBackend.PathPrefix
+		}
+		if cfg.DefaultRemoteBackend.HeadersToAdd != nil {
+			ctrl.DefaultRemoteBackend.HeadersToAdd = cfg.DefaultRemoteBackend.HeadersToAdd
+		}
 	}
 
 	if err = ctrl.SetupWithManager(mgr); err != nil {

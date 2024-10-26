@@ -102,15 +102,15 @@ type OffloadingConfig struct {
 	// +kubebuilder:default=false
 	Disabled bool `json:"disabled,omitempty"`
 
-	// LocalServiceRef is the reference to the local service exposing the model
+	// ServiceRef is the reference to the service exposing the model inside the cluster
 	// If not specified, a local service will be created
 	// +kubebuilder:validation:Optional
-	LocalServiceRef *ServiceReference `json:"localServiceRef,omitempty"`
+	ServiceRef *ServiceReference `json:"serviceRef,omitempty"`
 
-	// RemoteServiceRef is the reference to the remote service exposing the model
-	// If not specified, we will use Beamlit's default service
+	// RemoteBackend is the reference to the remote backend
+	// By default, the model deployment will be offloaded to the default backend
 	// +kubebuilder:validation:Optional
-	RemoteServiceRef *ServiceReference `json:"remoteServiceRef,omitempty"`
+	RemoteBackend *RemoteBackend `json:"remoteBackend,omitempty"`
 
 	// Metrics is the list of metrics used for offloading
 	// +kubebuilder:validation:Optional
@@ -126,6 +126,67 @@ type OffloadingConfig struct {
 type ServiceReference struct {
 	corev1.ObjectReference `json:",inline"`
 	TargetPort             int32 `json:"targetPort,omitempty"`
+}
+
+type SupportedScheme string
+
+const (
+	SupportedSchemeHTTP  SupportedScheme = "http"
+	SupportedSchemeHTTPS SupportedScheme = "https"
+)
+
+type RemoteBackend struct {
+	// Host is the host of the remote backend
+	// +kubebuilder:validation:Required
+	Host string `json:"host,omitempty"`
+
+	// AuthConfig is the authentication configuration for the remote backend
+	// +kubebuilder:validation:Optional
+	AuthConfig *AuthConfig `json:"authConfig,omitempty"`
+
+	// PathPrefix is the path prefix for the remote backend
+	PathPrefix string `json:"pathPrefix,omitempty"`
+
+	// HeadersToAdd is the list of headers to add to the requests
+	// +kubebuilder:validation:Optional
+	HeadersToAdd map[string]string `json:"headersToAdd,omitempty"`
+
+	// Scheme is the scheme for the remote backend
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="http"
+	// +kubebuilder:validation:Enum=http;https
+	Scheme SupportedScheme `json:"scheme,omitempty"`
+}
+
+type AuthType string
+
+const (
+	AuthTypeOAuth AuthType = "oauth"
+)
+
+type AuthConfig struct {
+	// Type is the type of the authentication
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=oauth
+	Type AuthType `json:"type,omitempty" yaml:"type,omitempty"`
+
+	// OAuthConfig is the OAuth configuration for the remote backend
+	// +kubebuilder:validation:Optional
+	OAuthConfig *OAuthConfig `json:"oauthConfig,omitempty" yaml:"oauthConfig,omitempty"`
+}
+
+type OAuthConfig struct {
+	// ClientID is the client ID for the OAuth configuration
+	// +kubebuilder:validation:Required
+	ClientID string `json:"clientId,omitempty" yaml:"clientId,omitempty"`
+
+	// ClientSecret is the client secret for the OAuth configuration
+	// +kubebuilder:validation:Required
+	ClientSecret string `json:"clientSecret,omitempty" yaml:"clientSecret,omitempty"`
+
+	// TokenURL is the token URL for the OAuth configuration
+	// +kubebuilder:validation:Required
+	TokenURL string `json:"tokenUrl,omitempty" yaml:"tokenUrl,omitempty"`
 }
 
 type OffloadingBehavior struct {

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"time"
 
 	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,11 +30,11 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 	discoveryv1apply "k8s.io/client-go/applyconfigurations/discovery/v1"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type kubernetesConfigurer struct {
 	gatewayServiceRef              *modelv1alpha1.ServiceReference
-	proxyServiceRef                *modelv1alpha1.ServiceReference
 	kubeClient                     kubernetes.Interface
 	beamlitServicesByModelService  map[types.NamespacedName]*types.NamespacedName
 	initialEndpointPerLocalService map[types.NamespacedName][]*types.NamespacedName
@@ -46,11 +47,11 @@ func newKubernetesConfigurer(ctx context.Context, kubeClient kubernetes.Interfac
 		beamlitServicesByModelService:  make(map[types.NamespacedName]*types.NamespacedName),
 		stopChans:                      make(map[types.NamespacedName][]chan bool),
 		initialEndpointPerLocalService: make(map[types.NamespacedName][]*types.NamespacedName),
+		gatewayServiceRef:              nil,
 	}, nil
 }
 
-func (s *kubernetesConfigurer) Start(ctx context.Context, proxyService *modelv1alpha1.ServiceReference, gatewayService *modelv1alpha1.ServiceReference) error {
-	s.proxyServiceRef = proxyService
+func (s *kubernetesConfigurer) Start(ctx context.Context, gatewayService *modelv1alpha1.ServiceReference) error {
 	s.gatewayServiceRef = gatewayService
 	return nil
 }
@@ -333,29 +334,38 @@ func (s *kubernetesConfigurer) cleanUnusedEndpointSlices(ctx context.Context, se
 }
 
 func (s *kubernetesConfigurer) Unconfigure(ctx context.Context, service *modelv1alpha1.ServiceReference) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second) // TODO: change this
+	defer cancel()
 	if value, ok := s.beamlitServicesByModelService[types.NamespacedName{Namespace: service.Namespace, Name: service.Name}]; !ok || value == nil {
 		return nil
 	}
+	logger := log.FromContext(ctx)
+	logger.V(1).Info("Unconfiguring service", "Name", service.Name)
 	err := s.stopWatchers(ctx, service)
 	if err != nil {
 		return err
 	}
+	logger.V(1).Info("Adding kubernetes managed endpoints slice", "Name", service.Name)
 	err = s.addKubernetesManagedEndpointsSlice(ctx, service)
 	if err != nil {
 		return err
 	}
+	logger.V(1).Info("Deleting beamlit endpoints slice", "Name", service.Name)
 	err = s.deleteBeamlitEndpointsSlice(ctx, service)
 	if err != nil {
 		return err
 	}
+	logger.V(1).Info("Deleting beamlit service", "Name", service.Name)
 	err = s.deleteBeamlitService(ctx, service)
 	if err != nil {
 		return err
 	}
+	logger.V(1).Info("Deleting external IPs from gateway service", "Name", service.Name)
 	err = s.deleteExternalIPsFromGatewayService(ctx, service)
 	if err != nil {
 		return err
 	}
+	logger.V(1).Info("Successfully unregistered service", "Name", service.Name)
 	return nil
 }
 
@@ -374,7 +384,7 @@ func (s *kubernetesConfigurer) stopWatchers(ctx context.Context, serviceRef *mod
 		return fmt.Errorf("stop channel not found for service %s", serviceRef.Name)
 	}
 	for _, ch := range stopCh {
-		ch <- true
+		close(ch)
 	}
 	return nil
 }

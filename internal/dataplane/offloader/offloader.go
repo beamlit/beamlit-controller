@@ -21,31 +21,30 @@ import (
 	"fmt"
 
 	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
+	beamlitclientset "github.com/tmp-moon/beamlit-proxy/clientset"
 	"k8s.io/client-go/kubernetes"
-	gatewayv1client "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
 type OffloaderType string
 
 const (
-	GatewayAPIOffloaderType OffloaderType = "gateway-api"
+	GatewayAPIOffloaderType     OffloaderType = "gateway-api"
+	BeamlitGatewayOffloaderType OffloaderType = "beamlit-gateway"
 )
 
-type offloaderFactory func(ctx context.Context, kubeClient kubernetes.Interface, gatewayClient gatewayv1client.Interface, gatewayName string, gatewayNamespace string) (Offloader, error)
+type offloaderFactory func(ctx context.Context, kubeClient kubernetes.Interface, proxyClient *beamlitclientset.ClientSet) (Offloader, error)
 
-var (
-	offloaderFactories = map[OffloaderType]offloaderFactory{
-		GatewayAPIOffloaderType: newGatewayAPIOffloader,
-	}
-)
+var offloaderFactories = map[OffloaderType]offloaderFactory{
+	BeamlitGatewayOffloaderType: newBeamlitGatewayOffloader,
+}
 
 // NewOffloader creates a new offloader for the given type
-func NewOffloader(ctx context.Context, offloaderType OffloaderType, kubeClient kubernetes.Interface, gatewayClient gatewayv1client.Interface, gatewayName string, gatewayNamespace string) (Offloader, error) {
+func NewOffloader(ctx context.Context, offloaderType OffloaderType, kubeClient kubernetes.Interface, proxyClient *beamlitclientset.ClientSet) (Offloader, error) {
 	factory, ok := offloaderFactories[offloaderType]
 	if !ok {
-		return nil, fmt.Errorf("unknown offloader type: %s", offloaderType)
+		return nil, fmt.Errorf("unsupported offloader type: %s", offloaderType)
 	}
-	return factory(ctx, kubeClient, gatewayClient, gatewayName, gatewayNamespace)
+	return factory(ctx, kubeClient, proxyClient)
 }
 
 //go:generate go run go.uber.org/mock/mockgen -source=offloader.go -destination=offloader_mock.go -package=offloader Offloader
@@ -53,7 +52,7 @@ func NewOffloader(ctx context.Context, offloaderType OffloaderType, kubeClient k
 // Offloader is responsible for configuring the underlying infrastructure to offload the model.
 type Offloader interface {
 	// Configure configures the offloader with the given model, backend service reference, remote service reference, and backend weight.
-	Configure(ctx context.Context, model *modelv1alpha1.ModelDeployment, backendServiceRef *modelv1alpha1.ServiceReference, remoteServiceRef *modelv1alpha1.ServiceReference, backendWeight int) error
+	Configure(ctx context.Context, model *modelv1alpha1.ModelDeployment, localBackend *modelv1alpha1.ServiceReference, remoteBackend *modelv1alpha1.RemoteBackend, remoteBackendWeight int) error
 	// Cleanup cleans up the offloader for the given model. It should remove any resources created by the offloader for the given model.
 	Cleanup(ctx context.Context, model *modelv1alpha1.ModelDeployment) error
 }

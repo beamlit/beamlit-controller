@@ -1,64 +1,71 @@
 controllerManager:
+  # -- kube-rbac-proxy options
   kubeRbacProxy:
+    # -- args to pass to the kube-rbac-proxy
     args:
       - --secure-listen-address=0.0.0.0:8443
       - --upstream=http://127.0.0.1:8080/
       - --logtostderr=true
       - --v=0
+    # -- container security context
     containerSecurityContext:
+      # -- allowPrivilegeEscalation
       allowPrivilegeEscalation: false
+      # -- capabilities to drop
       capabilities:
         drop:
           - ALL
+    # -- image to use for the kube-rbac-proxy
     image:
       repository: gcr.io/kubebuilder/kube-rbac-proxy
       tag: v0.16.0
+    # -- resources to request for the kube-rbac-proxy
     resources:
+      # -- limits for the kube-rbac-proxy
       limits:
         cpu: 500m
         memory: 128Mi
+      # -- requests for the kube-rbac-proxy
       requests:
         cpu: 5m
         memory: 64Mi
+  # -- manager options
   manager:
-    args:
-      - --health-probe-bind-address=:8081
-      - --metrics-bind-address=127.0.0.1:8080
-      - --leader-elect
-      - --scrape-interval=30s
-      - --zap-log-level=2
-      - --default-remote-service-ref-namespace=beamlit
-      - --default-remote-service-ref-name=beamlit-proxy-svc
-      - --default-remote-service-ref-target-port=8081
-      - --gateway-service-ref-namespace=beamlit
-      - --gateway-service-ref-name=beamlit-gateway-copy-svc
-      - --gateway-service-ref-target-port=8000
-      - --gateway-name=beamlit-gateway
-      - --gateway-namespace=beamlit
-      - --namespaces=beamlit
+    # -- container security context
     containerSecurityContext:
+      # -- allowPrivilegeEscalation
       allowPrivilegeEscalation: false
       capabilities:
         drop:
           - ALL
+    # -- image to use for the manager
     image:
       repository: controller
       tag: latest
       pullPolicy: IfNotPresent
+    # -- resources to request for the manager
     resources:
+      # -- limits for the manager
       limits:
         cpu: 500m
         memory: 128Mi
+      # -- requests for the manager
       requests:
         cpu: 10m
         memory: 64Mi
+  # -- pod security context
   podSecurityContext:
     runAsNonRoot: true
+  # -- number of replicas
   replicas: 1
+  # -- service account
   serviceAccount:
     annotations: {}
+# -- kubernetes cluster domain
 kubernetesClusterDomain: cluster.local
+# -- metrics service
 metricsService:
+  # -- ports for the metrics service
   ports:
     - name: https
       port: 8443
@@ -66,30 +73,59 @@ metricsService:
       targetPort: https
   type: ClusterIP
 
-beamlit:
-  proxy:
-    fqdn: "gateway-fqdn"
-    port: 8081
+# -- beamlit api token
+beamlitApiToken: "REPLACE_ME"
+# -- beamlit base url
+beamlitBaseUrl: "https://api.beamlit.dev/v0"
 
-beamlitApiToken: "beamlit-api-token"
-beamlitBaseUrl: "beamlit-base-url"
+# -- allowed namespaces
+allowedNamespaces:
+  - beamlit
 
-gateway:
-  enabled: true
-  controllerName: gateway.envoyproxy.io/gatewayclass-controller
-  namespace: beamlit
-  port: 8000
-  allowedNamespaces:
-    - beamlit
-  selectors:
-    - app.kubernetes.io/component=proxy
-    - app.kubernetes.io/managed-by=envoy-gateway
-    - app.kubernetes.io/name=envoy
-    - gateway.envoyproxy.io/owning-gateway-name=beamlit-gateway
-    - gateway.envoyproxy.io/owning-gateway-namespace=beamlit
+# -- config.yaml options
+config:
+  # -- enable-http2
+  enableHTTP2: false
+  # -- secure-metrics
+  secureMetrics: false
+  # -- namespaces
+  namespaces: beamlit
+  # -- default-remote-backend
+  defaultRemoteBackend:
+    # -- host
+    host: "edge-gw.beamlit.net"
+    # -- path-prefix
+    pathPrefix: "/$workspace/$model"
+    # -- auth-config
+    authConfig:
+      # -- type
+      type: oauth
+      # -- oauth2
+      oauthConfig:
+        # -- client-id
+        clientId: "REPLACE_ME"
+        # -- client-secret
+        clientSecret: "REPLACE_ME"
+        # -- token-url
+        tokenUrl: "https://api.beamlit.dev/v0/oauth/token"
+    # -- scheme
+    scheme: https
+  # -- proxy-service
+  proxyService:
+    # -- proxy-service.namespace
+    namespace: beamlit
+    # -- proxy-service.name
+    name: proxy-beamlit-proxy
+    # -- proxy-service.port
+    port: 8080
+    # -- proxy-service.admin-port
+    adminPort: 8081
 
+# -- full install, install the metrics-server along with the controller manager
 fullInstall: true
 
+# -- metrics-server options
 metrics-server:
-  args: # needed for running locally with kind
+  # -- args to pass to the metrics-server
+  args:
     - --kubelet-insecure-tls

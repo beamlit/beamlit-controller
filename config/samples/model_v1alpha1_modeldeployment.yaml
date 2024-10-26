@@ -18,7 +18,7 @@ spec:
     disabled: false
     behavior:
       percentage: 50
-    localServiceRef:
+    serviceRef:
       name: php-apache
       namespace: beamlit
       targetPort: 80

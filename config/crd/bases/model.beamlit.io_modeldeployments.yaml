@@ -116,54 +116,6 @@ spec:
                     default: false
                     description: Disabled is the flag to disable offloading
                     type: boolean
-                  localServiceRef:
-                    description: |-
-                      LocalServiceRef is the reference to the local service exposing the model
-                      If not specified, a local service will be created
-                    properties:
-                      apiVersion:
-                        description: API version of the referent.
-                        type: string
-                      fieldPath:
-                        description: |-
-                          If referring to a piece of an object instead of an entire object, this string
-                          should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
-                          For example, if the object reference is to a container within a pod, this would take on a value like:
-                          "spec.containers{name}" (where "name" refers to the name of the container that triggered
-                          the event) or if no container name is specified "spec.containers[2]" (container with
-                          index 2 in this pod). This syntax is chosen only to have some well-defined way of
-                          referencing a part of an object.
-                        type: string
-                      kind:
-                        description: |-
-                          Kind of the referent.
-                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-                        type: string
-                      name:
-                        description: |-
-                          Name of the referent.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        type: string
-                      namespace:
-                        description: |-
-                          Namespace of the referent.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
-                        type: string
-                      resourceVersion:
-                        description: |-
-                          Specific resourceVersion to which this reference is made, if any.
-                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
-                        type: string
-                      targetPort:
-                        format: int32
-                        type: integer
-                      uid:
-                        description: |-
-                          UID of the referent.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
-                        type: string
-                    type: object
-                    x-kubernetes-map-type: atomic
                   metrics:
                     default: []
                     description: Metrics is the list of metrics used for offloading
@@ -631,10 +583,71 @@ spec:
                       - type
                       type: object
                     type: array
-                  remoteServiceRef:
+                  remoteBackend:
                     description: |-
-                      RemoteServiceRef is the reference to the remote service exposing the model
-                      If not specified, we will use Beamlit's default service
+                      RemoteBackend is the reference to the remote backend
+                      By default, the model deployment will be offloaded to the default backend
+                    properties:
+                      authConfig:
+                        description: AuthConfig is the authentication configuration
+                          for the remote backend
+                        properties:
+                          oauthConfig:
+                            description: OAuthConfig is the OAuth configuration for
+                              the remote backend
+                            properties:
+                              clientId:
+                                description: ClientID is the client ID for the OAuth
+                                  configuration
+                                type: string
+                              clientSecret:
+                                description: ClientSecret is the client secret for
+                                  the OAuth configuration
+                                type: string
+                              tokenUrl:
+                                description: TokenURL is the token URL for the OAuth
+                                  configuration
+                                type: string
+                            required:
+                            - clientId
+                            - clientSecret
+                            - tokenUrl
+                            type: object
+                          type:
+                            description: Type is the type of the authentication
+                            enum:
+                            - oauth
+                            type: string
+                        required:
+                        - type
+                        type: object
+                      headersToAdd:
+                        additionalProperties:
+                          type: string
+                        description: HeadersToAdd is the list of headers to add to
+                          the requests
+                        type: object
+                      host:
+                        description: Host is the host of the remote backend
+                        type: string
+                      pathPrefix:
+                        description: PathPrefix is the path prefix for the remote
+                          backend
+                        type: string
+                      scheme:
+                        default: http
+                        description: Scheme is the scheme for the remote backend
+                        enum:
+                        - http
+                        - https
+                        type: string
+                    required:
+                    - host
+                    type: object
+                  serviceRef:
+                    description: |-
+                      ServiceRef is the reference to the service exposing the model inside the cluster
+                      If not specified, a local service will be created
                     properties:
                       apiVersion:
                         description: API version of the referent.
