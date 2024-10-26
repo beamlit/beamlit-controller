@@ -39,6 +39,7 @@ import (
 	"github.com/beamlit/operator/internal/informers/health"
 	"github.com/beamlit/operator/internal/informers/metric"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const modelDeploymentFinalizer = "modeldeployment.beamlit.io/finalizer"
@@ -46,17 +47,22 @@ const modelDeploymentFinalizer = "modeldeployment.beamlit.io/finalizer"
 // ModelDeploymentReconciler reconciles a ModelDeployment object
 type ModelDeploymentReconciler struct {
 	client.Client
-	Scheme                  *runtime.Scheme
-	BeamlitClient           *beamlit.Client
-	MetricInformer          metric.MetricInformer
-	HealthInformer          health.HealthInformer
-	HealthStatusChan        <-chan health.HealthStatus
-	MetricStatusChan        <-chan metric.MetricStatus
-	OngoingOffloadings      sync.Map // key: namespace/name, value: percentage
-	Offloader               offloader.Offloader
-	Configurer              configurer.Configurer
-	DefaultRemoteServiceRef *modelv1alpha1.ServiceReference
-	ManagedModels           map[string]v1.ObjectReference
+	Scheme        *runtime.Scheme
+	BeamlitClient *beamlit.Client
+
+	Offloader        offloader.Offloader
+	Configurer       configurer.Configurer
+	MetricInformer   metric.MetricInformer
+	HealthInformer   health.HealthInformer
+	HealthStatusChan <-chan health.HealthStatus
+	MetricStatusChan <-chan metric.MetricStatus
+
+	OngoingOffloadings sync.Map // key: namespace/name, value: percentage
+	ModelState         sync.Map // key: namespace/name, value: modelState
+	ManagedModels      map[string]v1.ObjectReference
+	BeamlitModels      map[string]string // key: spec.model/spec.environment, value: modelDeployment name
+
+	DefaultRemoteBackend *modelv1alpha1.RemoteBackend
 }
 
 // +kubebuilder:rbac:groups=model.beamlit.io,resources=modeldeployments,verbs=get;list;watch;create;update;patch;delete
@@ -121,6 +127,9 @@ func (r *ModelDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			return ctrl.Result{Requeue: true}, nil
 		}
 		logger.V(0).Error(err, "Failed to create or update ModelDeployment")
+		r.ModelState.Delete(fmt.Sprintf("%s/%s", model.Namespace, model.Name))
+		r.OngoingOffloadings.Delete(fmt.Sprintf("%s/%s", model.Namespace, model.Name))
+		delete(r.ManagedModels, model.Name)
 		return ctrl.Result{}, err
 	}
 	logger.V(0).Info("Successfully created or updated ModelDeployment", "Name", model.Name)
@@ -129,26 +138,44 @@ func (r *ModelDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 func (r *ModelDeploymentReconciler) createOrUpdate(ctx context.Context, model *modelv1alpha1.ModelDeployment) error {
 	logger := log.FromContext(ctx)
+	if value, ok := r.BeamlitModels[fmt.Sprintf("%s/%s", model.Spec.Environment, model.Spec.Model)]; ok {
+		if value != model.Name {
+			logger.V(1).Error(nil, "ModelDeployment already exists on Beamlit with a different name inside the cluster", "Name", model.Name, "ExistingName", value)
+			return nil
+		}
+	}
 	logger.V(1).Info("Converting ModelDeployment to Beamlit ModelDeployment", "Name", model.Name)
 	beamlitModelDeployment, err := helper.ToBeamlitModelDeployment(ctx, r.Client, model)
 	if err != nil {
 		logger.V(0).Error(err, "Failed to convert ModelDeployment to Beamlit ModelDeployment")
 		return err
 	}
+	r.BeamlitModels[fmt.Sprintf("%s/%s", model.Spec.Environment, model.Spec.Model)] = model.Name
 	logger.V(1).Info("Creating or updating ModelDeployment on Beamlit", "Name", model.Name)
 	updatedModelDeployment, err := r.BeamlitClient.CreateOrUpdateModelDeployment(ctx, &beamlitModelDeployment)
 	if err != nil {
 		logger.V(0).Error(err, "Failed to create or update ModelDeployment on Beamlit")
 		return err
 	}
-	logger.V(1).Info("Successfully created or updated ModelDeployment on Beamlit", "Name", model.Name)
+	model.Status.Workspace = updatedModelDeployment.Workspace
+	model.Status.CreatedAtOnBeamlit = metav1.NewTime(updatedModelDeployment.CreatedAt)
+	model.Status.UpdatedAtOnBeamlit = metav1.NewTime(updatedModelDeployment.UpdatedAt)
 	if err := r.configureOffloading(ctx, model); err != nil {
 		logger.V(0).Error(err, "Failed to configure offloading for ModelDeployment")
 		return err
 	}
+	model.Status.Conditions = append(model.Status.Conditions, metav1.Condition{
+		Type:               "Ready",
+		Status:             metav1.ConditionTrue,
+		Reason:             "ModelDeploymentReady",
+		Message:            "ModelDeployment is ready",
+		LastTransitionTime: metav1.NewTime(time.Now()),
+	})
 	logger.V(1).Info("Successfully configured offloading for ModelDeployment", "Name", model.Name)
-	updateModelStatus(model, updatedModelDeployment)
-	logger.V(1).Info("Successfully updated ModelDeployment status", "Name", model.Name)
+	//if err := r.Status().Update(ctx, model); err != nil {
+	//	logger.V(0).Error(err, "Failed to update ModelDeployment")
+	//	return err
+	//}
 	return nil
 }
 
@@ -159,7 +186,7 @@ func (r *ModelDeploymentReconciler) configureOffloading(ctx context.Context, mod
 	}
 	if model.Spec.OffloadingConfig.Disabled {
 		logger.V(1).Info("Unregistering offloading for ModelDeployment", "Name", model.Name)
-		if err := r.Configurer.Unconfigure(ctx, model.Spec.OffloadingConfig.LocalServiceRef); err != nil {
+		if err := r.Configurer.Unconfigure(ctx, model.Spec.OffloadingConfig.ServiceRef); err != nil {
 			logger.V(0).Error(err, "Failed to unconfigure local service for ModelDeployment")
 			return err
 		}
@@ -169,19 +196,24 @@ func (r *ModelDeploymentReconciler) configureOffloading(ctx context.Context, mod
 			logger.V(0).Error(err, "Failed to cleanup offloading for ModelDeployment")
 			return err
 		}
+		r.OngoingOffloadings.Delete(model.Name)
+		r.ModelState.Delete(model.Name)
+		delete(r.ManagedModels, model.Name)
 		logger.V(1).Info("Successfully unregistered offloading for ModelDeployment", "Name", model.Name)
 		return nil
 	}
-	if model.Spec.OffloadingConfig.RemoteServiceRef == nil { // TODO: Make this really configurable
+	if model.Spec.OffloadingConfig.RemoteBackend == nil { // TODO: Make this really configurable
 		logger.V(1).Info("Setting default remote service reference for ModelDeployment", "Name", model.Name)
-		model.Spec.OffloadingConfig.RemoteServiceRef = r.DefaultRemoteServiceRef
+		model.Spec.OffloadingConfig.RemoteBackend = r.DefaultRemoteBackend
 	}
 	logger.V(1).Info("Registering local service for ModelDeployment", "Name", model.Name)
-	if err := r.Configurer.Configure(ctx, model.Spec.OffloadingConfig.LocalServiceRef); err != nil {
+	if err := r.Configurer.Configure(ctx, model.Spec.OffloadingConfig.ServiceRef); err != nil {
 		logger.V(0).Error(err, "Failed to configure offloading for ModelDeployment")
 		return err
 	}
 	logger.V(1).Info("Successfully configured local service for ModelDeployment", "Name", model.Name)
+	r.OngoingOffloadings.Store(model.Name, 0)
+	r.ModelState.Store(model.Name, true)
 	// TODO: Make condition duration configurable
 	logger.V(1).Info("Registering metrics watcher for ModelDeployment", "Name", model.Name)
 	r.MetricInformer.Register(ctx, model.Name, model.Spec.OffloadingConfig.Metrics, model.Spec.ModelSourceRef, 5*time.Second, 5*time.Second)
@@ -189,37 +221,40 @@ func (r *ModelDeploymentReconciler) configureOffloading(ctx context.Context, mod
 	logger.V(1).Info("Registering health watcher for ModelDeployment", "Name", model.Name)
 	r.HealthInformer.Register(ctx, model.Name, model.Spec.ModelSourceRef)
 	logger.V(1).Info("Successfully registered health watcher for ModelDeployment", "Name", model.Name)
-	backendServiceRef := model.Spec.OffloadingConfig.LocalServiceRef.DeepCopy()
+	backendServiceRef := model.Spec.OffloadingConfig.ServiceRef.DeepCopy()
 	backendServiceRef.Name = fmt.Sprintf("%s-beamlit", backendServiceRef.Name) // TODO: Make this returned by the service controller
 	logger.V(1).Info("Configuring offloading for ModelDeployment", "Name", model.Name)
-	if err := r.Offloader.Configure(ctx, model, backendServiceRef, model.Spec.OffloadingConfig.RemoteServiceRef, 0); err != nil {
+	if err := r.Offloader.Configure(ctx, model, backendServiceRef, model.Spec.OffloadingConfig.RemoteBackend, 0); err != nil {
 		logger.V(0).Error(err, "Failed to configure offloading for ModelDeployment")
 		return err
+	}
+
+	r.ManagedModels[model.Name] = v1.ObjectReference{
+		Namespace: model.Namespace,
+		Name:      model.Name,
 	}
 	logger.V(1).Info("Successfully registered offloading for ModelDeployment", "Name", model.Name)
 	return nil
 }
 
-func updateModelStatus(model *modelv1alpha1.ModelDeployment, _ *beamlit.ModelDeployment) {
-	// TODO: Set AvailableReplicas, DesiredReplicas ...
-	return
-}
-
 func (r *ModelDeploymentReconciler) finalizeModel(ctx context.Context, model *modelv1alpha1.ModelDeployment) error {
 	logger := log.FromContext(ctx)
 	logger.V(1).Info("Finalizing ModelDeployment", "Name", model.Name)
-	if err := r.BeamlitClient.DeleteModelDeployment(ctx, model.Name); err != nil {
+	if err := r.BeamlitClient.DeleteModelDeployment(ctx, model.Spec.Model, model.Spec.Environment); err != nil {
 		logger.V(0).Error(err, "Failed to delete ModelDeployment")
 		return err
 	}
-	r.OngoingOffloadings.Delete(fmt.Sprintf("%s/%s", model.Namespace, model.Name))
+	delete(r.BeamlitModels, model.Name)
+	r.OngoingOffloadings.Delete(model.Name)
+	r.ModelState.Delete(model.Name)
+	delete(r.ManagedModels, model.Name)
 	logger.V(1).Info("Successfully deleted offloading for ModelDeployment", "Name", model.Name)
 	if err := r.Offloader.Cleanup(ctx, model); err != nil {
 		logger.V(0).Error(err, "Failed to cleanup offloading for ModelDeployment")
 		return err
 	}
 	logger.V(1).Info("Successfully cleaned up offloading for ModelDeployment", "Name", model.Name)
-	if err := r.Configurer.Unconfigure(ctx, model.Spec.OffloadingConfig.LocalServiceRef); err != nil {
+	if err := r.Configurer.Unconfigure(ctx, model.Spec.OffloadingConfig.ServiceRef); err != nil {
 		logger.V(0).Error(err, "Failed to unconfigure local service for ModelDeployment")
 		return err
 	}
@@ -237,7 +272,7 @@ func (r *ModelDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *ModelDeploymentReconciler) watchForInformerUpdates(ctx context.Context) error {
+func (r *ModelDeploymentReconciler) WatchForInformerUpdates(ctx context.Context) error {
 	logger := log.FromContext(ctx)
 	for {
 		select {
@@ -252,6 +287,9 @@ func (r *ModelDeploymentReconciler) watchForInformerUpdates(ctx context.Context)
 				if err := r.Client.Get(ctx, types.NamespacedName{Namespace: value.Namespace, Name: value.Name}, model); err != nil {
 					logger.V(0).Error(err, "Failed to get ModelDeployment", "Name", value.Name)
 					continue
+				}
+				if model.Spec.OffloadingConfig.RemoteBackend == nil {
+					model.Spec.OffloadingConfig.RemoteBackend = r.DefaultRemoteBackend
 				}
 				logger.V(1).Info("Handling health check callback for ModelDeployment", "Name", model.Name)
 				if err := r.healthCheckCallback(ctx, model, healthStatus.Healthy); err != nil {
@@ -269,6 +307,9 @@ func (r *ModelDeploymentReconciler) watchForInformerUpdates(ctx context.Context)
 					logger.V(0).Error(err, "Failed to get ModelDeployment", "Name", value.Name)
 					continue
 				}
+				if model.Spec.OffloadingConfig.RemoteBackend == nil {
+					model.Spec.OffloadingConfig.RemoteBackend = r.DefaultRemoteBackend
+				}
 				logger.V(1).Info("Handling metric callback for ModelDeployment", "Name", model.Name)
 				if err := r.metricCallback(ctx, model, metricStatus.Reached); err != nil {
 					logger.V(0).Error(err, "Failed to handle metric callback for ModelDeployment", "Name", model.Name)
@@ -283,22 +324,21 @@ func (r *ModelDeploymentReconciler) watchForInformerUpdates(ctx context.Context)
 func (r *ModelDeploymentReconciler) metricCallback(ctx context.Context, model *modelv1alpha1.ModelDeployment, reached bool) error {
 	logger := log.FromContext(ctx)
 	logger.V(1).Info("Metric callback for ModelDeployment", "Name", model.Name, "reached", reached)
+	if value, ok := r.ModelState.Load(fmt.Sprintf("%s/%s", model.Namespace, model.Name)); ok {
+		if !value.(bool) {
+			return nil
+		}
+	}
 	if !reached {
-		if value, ok := r.OngoingOffloadings.Load(fmt.Sprintf("%s/%s", model.Namespace, model.Name)); ok {
-			logger.V(1).Info("Metric not reached for ModelDeployment", "Name", model.Name)
-			if value.(int) == 100 {
-				logger.V(1).Info("Already offloaded to 100% for ModelDeployment", "Name", model.Name)
-				return nil // probably already offload for unhealthy status
-			}
+		if _, ok := r.OngoingOffloadings.Load(fmt.Sprintf("%s/%s", model.Namespace, model.Name)); ok {
 			logger.V(1).Info("Offloading model deployment to 0%", "Name", model.Name)
 			r.OngoingOffloadings.Delete(fmt.Sprintf("%s/%s", model.Namespace, model.Name))
-			localServiceRef, err := r.Configurer.GetLocalBeamlitService(ctx, model.Spec.OffloadingConfig.LocalServiceRef)
+			localServiceRef, err := r.Configurer.GetLocalBeamlitService(ctx, model.Spec.OffloadingConfig.ServiceRef)
 			if err != nil {
 				logger.V(0).Error(err, "Failed to get local service for ModelDeployment", "Name", model.Name)
 				return err
 			}
-
-			if err := r.Offloader.Configure(ctx, model, localServiceRef, model.Spec.OffloadingConfig.RemoteServiceRef, 0); err != nil {
+			if err := r.Offloader.Configure(ctx, model, localServiceRef, model.Spec.OffloadingConfig.RemoteBackend, 0); err != nil {
 				logger.V(0).Error(err, "Failed to offload model deployment to 0%", "Name", model.Name)
 				return err
 			}
@@ -308,12 +348,12 @@ func (r *ModelDeploymentReconciler) metricCallback(ctx context.Context, model *m
 	}
 	if _, ok := r.OngoingOffloadings.Load(fmt.Sprintf("%s/%s", model.Namespace, model.Name)); !ok {
 		logger.V(1).Info("Offloading model deployment", "Name", model.Name, "Percentage", model.Spec.OffloadingConfig.Behavior.Percentage)
-		localServiceRef, err := r.Configurer.GetLocalBeamlitService(ctx, model.Spec.OffloadingConfig.LocalServiceRef)
+		localServiceRef, err := r.Configurer.GetLocalBeamlitService(ctx, model.Spec.OffloadingConfig.ServiceRef)
 		if err != nil {
 			logger.V(0).Error(err, "Failed to get local service for ModelDeployment", "Name", model.Name)
 			return err
 		}
-		if err := r.Offloader.Configure(ctx, model, localServiceRef, model.Spec.OffloadingConfig.RemoteServiceRef, int(model.Spec.OffloadingConfig.Behavior.Percentage)); err != nil {
+		if err := r.Offloader.Configure(ctx, model, localServiceRef, model.Spec.OffloadingConfig.RemoteBackend, int(model.Spec.OffloadingConfig.Behavior.Percentage)); err != nil {
 			logger.V(0).Error(err, "Failed to offload model deployment", "Name", model.Name)
 			return err
 		}
@@ -329,16 +369,17 @@ func (r *ModelDeploymentReconciler) healthCheckCallback(ctx context.Context, mod
 	if !healthStatus {
 		// 100% offload
 		logger.V(1).Info("Offloading model deployment to 100% due to unhealthy status", "Name", model.Name)
-		localServiceRef, err := r.Configurer.GetLocalBeamlitService(ctx, model.Spec.OffloadingConfig.LocalServiceRef)
+		localServiceRef, err := r.Configurer.GetLocalBeamlitService(ctx, model.Spec.OffloadingConfig.ServiceRef)
 		if err != nil {
 			logger.V(0).Error(err, "Failed to get local service for ModelDeployment", "Name", model.Name)
 			return err
 		}
-		if err := r.Offloader.Configure(ctx, model, localServiceRef, model.Spec.OffloadingConfig.RemoteServiceRef, 100); err != nil {
+		if err := r.Offloader.Configure(ctx, model, localServiceRef, model.Spec.OffloadingConfig.RemoteBackend, 100); err != nil {
 			logger.V(0).Error(err, "Failed to offload model deployment to 100%", "Name", model.Name)
 			return err
 		}
 		r.OngoingOffloadings.Store(fmt.Sprintf("%s/%s", model.Namespace, model.Name), 100)
+		r.ModelState.Store(fmt.Sprintf("%s/%s", model.Namespace, model.Name), false)
 		logger.V(1).Info("Successfully offloaded model deployment", "Name", model.Name, "Namespace", model.Namespace)
 		return nil
 	}
@@ -349,16 +390,17 @@ func (r *ModelDeploymentReconciler) healthCheckCallback(ctx context.Context, mod
 			return nil
 		}
 		logger.V(1).Info("Offloading model deployment back to desired percentage", "Name", model.Name, "Percentage", model.Spec.OffloadingConfig.Behavior.Percentage)
-		localServiceRef, err := r.Configurer.GetLocalBeamlitService(ctx, model.Spec.OffloadingConfig.LocalServiceRef)
+		localServiceRef, err := r.Configurer.GetLocalBeamlitService(ctx, model.Spec.OffloadingConfig.ServiceRef)
 		if err != nil {
 			logger.V(0).Error(err, "Failed to get local service for ModelDeployment", "Name", model.Name)
 			return err
 		}
 		// If the health check is successful, we need to offload back to the original percentage
-		if err := r.Offloader.Configure(ctx, model, localServiceRef, model.Spec.OffloadingConfig.RemoteServiceRef, int(model.Spec.OffloadingConfig.Behavior.Percentage)); err != nil {
+		if err := r.Offloader.Configure(ctx, model, localServiceRef, model.Spec.OffloadingConfig.RemoteBackend, int(model.Spec.OffloadingConfig.Behavior.Percentage)); err != nil {
 			return err
 		}
 		r.OngoingOffloadings.Store(fmt.Sprintf("%s/%s", model.Namespace, model.Name), int(model.Spec.OffloadingConfig.Behavior.Percentage))
+		r.ModelState.Store(fmt.Sprintf("%s/%s", model.Namespace, model.Name), true)
 		logger.V(1).Info("Successfully offloaded model deployment", "Name", model.Name, "Namespace", model.Namespace)
 	}
 	return nil

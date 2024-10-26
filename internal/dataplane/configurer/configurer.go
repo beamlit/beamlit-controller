@@ -54,7 +54,7 @@ func NewConfigurer(ctx context.Context, configurerType ConfigurerType, kubeClien
 // It also creates a new Service that can be used by the proxy to route traffic to the internal pod
 type Configurer interface {
 	// Start starts the service configurer.
-	Start(ctx context.Context, proxyService *modelv1alpha1.ServiceReference, gatewayService *modelv1alpha1.ServiceReference) error
+	Start(ctx context.Context, gatewayService *modelv1alpha1.ServiceReference) error
 	// Configure configures a service to be proxied by Beamlit.
 	Configure(ctx context.Context, service *modelv1alpha1.ServiceReference) error
 	// Unconfigure unconfigures a service from being proxied by Beamlit.

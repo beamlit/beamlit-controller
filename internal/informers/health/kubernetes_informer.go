@@ -46,6 +46,7 @@ func newK8SHealthInformer(ctx context.Context, restConfig *rest.Config) (HealthI
 		healthChan: make(chan HealthStatus),
 		clientset:  clientset,
 		watchers:   make(map[string]*k8sHealthWatcher),
+		errChan:    make(chan informers.ErrWrapper),
 	}, nil
 }
 

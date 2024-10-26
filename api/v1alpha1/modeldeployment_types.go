@@ -24,56 +24,31 @@ import (
 
 // ModelDeploymentSpec defines the desired state of ModelDeployment
 type ModelDeploymentSpec struct {
-	// DisplayName is the name of the model deployment displayed on Beamlit UI
-	// Note: The DisplayName is not used for any logic and is only for display purposes. The name of the model deployment is the name of the ModelDeployment object.
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=""
-	DisplayName string `json:"displayName,omitempty"`
-
-	// EnabledLocations is the list of locations where the model can be deployed
-	// If not specified, the model deployment can be deployed in all locations
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default={}
-	EnabledLocations []Location `json:"enabledLocations,omitempty"`
-
-	// SupportedGPUTypes is the list of GPU types supported by the model deployment
-	// If not specified, the model deployment can be deployed on all GPU types
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default={A100_40GB, T4}
-	SupportedGPUTypes []string `json:"supportedGPUTypes,omitempty"`
-
-	// Environment is the environment attached to the model deployment
-	// If not specified, the model deployment will be deployed in the "prod" environment
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default="prod"
-	Environment string `json:"environment,omitempty"`
-
-	// MinNumReplicasPerLocation is the minimum number of replicas per location
-	// If not specified, the model deployment will be deployed with 0 replicas
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=0
-	MinNumReplicasPerLocation int32 `json:"minNumReplicasPerLocation,omitempty"`
-
-	// MaxNumReplicasPerLocation is the maximum number of replicas per location
-	// If not specified, the model deployment will be deployed with no limit
-	// 0 means no limit
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=0
-	MaxNumReplicasPerLocation int32 `json:"maxNumReplicasPerLocation,omitempty"`
+	// Model is the name of the base model
+	// +kubebuilder:validation:Required
+	Model string `json:"model"`
 
 	// ModelSourceRef is the reference to the model source
 	// This is either a Deployment, StatefulSet... (anything that is a template for a pod)
 	// +kubebuilder:validation:Required
 	ModelSourceRef corev1.ObjectReference `json:"modelSourceRef"`
 
-	// ScalingConfig is the scaling configuration for the model deployment
-	// If not specified, the model deployment will be scaled automatically on Beamlit based on the number of requests
-	// You can specify either HPA or metrics, but not both.
+	// Environment is the environment attached to the model deployment
+	// If not specified, the model deployment will be deployed in the "prod" environment
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="production"
+	Environment string `json:"environment,omitempty"`
+
+	// Policies is the list of policies to apply to the model deployment
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default={}
-	ScalingConfig *ScalingConfig `json:"scalingConfig,omitempty"`
+	Policies []string `json:"policies,omitempty"`
+
+	// ServerlessConfig is the serverless configuration for the model deployment
+	// If not specified, the model deployment will be deployed with a default serverless configuration
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default={}
+	ServerlessConfig *ServerlessConfig `json:"serverlessConfig,omitempty"`
 
 	// OffloadingConfig is the offloading configuration for the model deployment
 	// If not specified, the model deployment will not be offloaded
@@ -82,49 +57,43 @@ type ModelDeploymentSpec struct {
 	OffloadingConfig *OffloadingConfig `json:"offloadingConfig,omitempty"`
 }
 
-type Location struct {
-	// Location is the location of the model deployment
-	// +kubebuilder:validation:Required
-	Location string `json:"location"`
-
-	// MinNumReplicas is the minimum number of replicas for the location
-	// Note: it supersedes the MinNumReplicas in the ModelDeploymentSpec
+type ServerlessConfig struct {
+	// MinNumReplicas is the minimum number of replicas
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=0
 	MinNumReplicas int32 `json:"minNumReplicas,omitempty"`
 
-	// MaxNumReplicas is the maximum number of replicas for the location
-	// Note: it supersedes the MaxNumReplicas in the ModelDeploymentSpec
-	// 0 means no limit
+	// MaxNumReplicas is the maximum number of replicas
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=0
+	// +kubebuilder:default=10
 	MaxNumReplicas int32 `json:"maxNumReplicas,omitempty"`
-}
 
-type ScalingConfig struct {
-	// MetricPort is the port to get the metric for the model deployment in a prometheus-compatible format (https://prometheus.io/docs/instrumenting/exposition_formats/)
+	// Metric is the metric used for scaling
 	// +kubebuilder:validation:Optional
-	MetricPort int32 `json:"metricPort,omitempty"`
+	Metric *string `json:"metric,omitempty"`
 
-	// MetricPath is the path to get the metric for the model deployment in a prometheus-compatible format
+	// Target is the target value for the metric
 	// +kubebuilder:validation:Optional
-	MetricPath string `json:"metricPath,omitempty"`
+	Target *string `json:"target,omitempty"`
 
-	// Behavior is the behavior of the autoscaler
+	// ScaleUpMinimum is the minimum number of replicas to scale up
+	// +kubebuilder:validation:Minimum=2
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default={}
-	Behavior *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior,omitempty"`
+	ScaleUpMinimum *int32 `json:"scaleUpMinimum,omitempty"`
 
-	// Metrics is the list of metrics used for autoscaling
+	// ScaleDownDelay is the delay between scaling down
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default={}
-	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
+	ScaleDownDelay *string `json:"scaleDownDelay,omitempty"`
 
-	// HPARef is the reference to the current HorizontalPodAutoscaler
+	// StableWindow is the window of time to consider the number of replicas stable
 	// +kubebuilder:validation:Optional
-	HPARef *corev1.ObjectReference `json:"hpaRef,omitempty"`
+	StableWindow *string `json:"stableWindow,omitempty"`
+
+	// LastPodRetentionPeriod is the retention period for the last pod
+	// +kubebuilder:validation:Optional
+	LastPodRetentionPeriod *string `json:"lastPodRetentionPeriod,omitempty"`
 }
 
 type OffloadingConfig struct {
@@ -133,15 +102,15 @@ type OffloadingConfig struct {
 	// +kubebuilder:default=false
 	Disabled bool `json:"disabled,omitempty"`
 
-	// LocalServiceRef is the reference to the local service exposing the model
+	// ServiceRef is the reference to the service exposing the model inside the cluster
 	// If not specified, a local service will be created
 	// +kubebuilder:validation:Optional
-	LocalServiceRef *ServiceReference `json:"localServiceRef,omitempty"`
+	ServiceRef *ServiceReference `json:"serviceRef,omitempty"`
 
-	// RemoteServiceRef is the reference to the remote service exposing the model
-	// If not specified, we will use Beamlit's default service
+	// RemoteBackend is the reference to the remote backend
+	// By default, the model deployment will be offloaded to the default backend
 	// +kubebuilder:validation:Optional
-	RemoteServiceRef *ServiceReference `json:"remoteServiceRef,omitempty"`
+	RemoteBackend *RemoteBackend `json:"remoteBackend,omitempty"`
 
 	// Metrics is the list of metrics used for offloading
 	// +kubebuilder:validation:Optional
@@ -159,6 +128,67 @@ type ServiceReference struct {
 	TargetPort             int32 `json:"targetPort,omitempty"`
 }
 
+type SupportedScheme string
+
+const (
+	SupportedSchemeHTTP  SupportedScheme = "http"
+	SupportedSchemeHTTPS SupportedScheme = "https"
+)
+
+type RemoteBackend struct {
+	// Host is the host of the remote backend
+	// +kubebuilder:validation:Required
+	Host string `json:"host,omitempty"`
+
+	// AuthConfig is the authentication configuration for the remote backend
+	// +kubebuilder:validation:Optional
+	AuthConfig *AuthConfig `json:"authConfig,omitempty"`
+
+	// PathPrefix is the path prefix for the remote backend
+	PathPrefix string `json:"pathPrefix,omitempty"`
+
+	// HeadersToAdd is the list of headers to add to the requests
+	// +kubebuilder:validation:Optional
+	HeadersToAdd map[string]string `json:"headersToAdd,omitempty"`
+
+	// Scheme is the scheme for the remote backend
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="http"
+	// +kubebuilder:validation:Enum=http;https
+	Scheme SupportedScheme `json:"scheme,omitempty"`
+}
+
+type AuthType string
+
+const (
+	AuthTypeOAuth AuthType = "oauth"
+)
+
+type AuthConfig struct {
+	// Type is the type of the authentication
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=oauth
+	Type AuthType `json:"type,omitempty" yaml:"type,omitempty"`
+
+	// OAuthConfig is the OAuth configuration for the remote backend
+	// +kubebuilder:validation:Optional
+	OAuthConfig *OAuthConfig `json:"oauthConfig,omitempty" yaml:"oauthConfig,omitempty"`
+}
+
+type OAuthConfig struct {
+	// ClientID is the client ID for the OAuth configuration
+	// +kubebuilder:validation:Required
+	ClientID string `json:"clientId,omitempty" yaml:"clientId,omitempty"`
+
+	// ClientSecret is the client secret for the OAuth configuration
+	// +kubebuilder:validation:Required
+	ClientSecret string `json:"clientSecret,omitempty" yaml:"clientSecret,omitempty"`
+
+	// TokenURL is the token URL for the OAuth configuration
+	// +kubebuilder:validation:Required
+	TokenURL string `json:"tokenUrl,omitempty" yaml:"tokenUrl,omitempty"`
+}
+
 type OffloadingBehavior struct {
 	// Percentage is the percentage of the requests that will be offloaded
 	// +kubebuilder:validation:Minimum=0
@@ -172,22 +202,13 @@ type OffloadingBehavior struct {
 type ModelDeploymentStatus struct {
 	Conditions        []metav1.Condition `json:"conditions,omitempty"`
 	AvailableReplicas int32              `json:"availableReplicas,omitempty"`
-	CurrentReplicas   int32              `json:"currentReplicas,omitempty"`
-	DesiredReplicas   int32              `json:"desiredReplicas,omitempty"`
-	OffloadingStatus  *OffloadingStatus  `json:"offloadingStatus,omitempty"`
-	ScalingStatus     *ScalingStatus     `json:"scalingStatus,omitempty"`
-}
-
-type ScalingStatus struct {
-	Status string                  `json:"status,omitempty"`
-	HPARef *corev1.ObjectReference `json:"hpaRef,omitempty"`
-}
-
-type OffloadingStatus struct {
-	Status          string                     `json:"status,omitempty"`
-	LocalServiceRef *corev1.ObjectReference    `json:"localServiceRef,omitempty"`
-	Behavior        *OffloadingBehavior        `json:"behavior,omitempty"`
-	Metrics         []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
+	// OffloadingStatus is the status of the offloading
+	// True if the model deployment is offloaded
+	OffloadingStatus bool `json:"offloadingStatus,omitempty"`
+	// Workspace is the workspace of the model deployment
+	Workspace          string      `json:"workspace,omitempty"`
+	CreatedAtOnBeamlit metav1.Time `json:"createdAtOnBeamlit,omitempty"`
+	UpdatedAtOnBeamlit metav1.Time `json:"updatedAtOnBeamlit,omitempty"`
 }
 
 //+kubebuilder:object:root=true

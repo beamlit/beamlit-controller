@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	scaleclient "k8s.io/client-go/scale"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // IsMetricSpecEqual checks if two metric specs are deeply equal (no pointer comparison).
@@ -113,6 +114,7 @@ func equalMetricTarget(a autoscalingv2.MetricTarget, b autoscalingv2.MetricTarge
 
 // getReplicasInfo gets the number of replicas and the selector of a given Kubernetes resource.
 func getReplicasInfo(ctx context.Context, restMapper meta.RESTMapper, scaleClient scaleclient.ScalesGetter, watchTarget *v1.ObjectReference) (int32, labels.Selector, error) {
+	logger := log.FromContext(ctx)
 	targetGroupVersion, err := schema.ParseGroupVersion(watchTarget.APIVersion)
 	if err != nil {
 		return 0, nil, err
@@ -144,6 +146,7 @@ func getReplicasInfo(ctx context.Context, restMapper meta.RESTMapper, scaleClien
 	}
 
 	if firstErr != nil {
+		logger.Error(firstErr, "error getting scale", "name", watchTarget.Name, "namespace", watchTarget.Namespace)
 		return 0, nil, firstErr
 	}
 
