@@ -1,3 +1,0 @@
-[submodule "hack/bench/k6-operator"]
-	path = hack/bench/k6-operator
-	url = https://github.com/grafana/k6-operator
