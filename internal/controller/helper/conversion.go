@@ -18,6 +18,7 @@ package helper
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/beamlit/operator/api/v1alpha1"
 	"github.com/beamlit/operator/internal/beamlit"
@@ -60,7 +61,7 @@ func ToBeamlitModelDeployment(ctx context.Context, kubernetesClient client.Clien
 }
 
 func toBeamlitPolicies(policies []string) []beamlit.PolicyName {
-	if policies == nil || len(policies) == 0 {
+	if len(policies) == 0 {
 		return nil
 	}
 	beamlitPolicies := make([]beamlit.PolicyName, len(policies))
@@ -76,5 +77,8 @@ func toBeamlitLabels(model *v1alpha1.ModelDeployment) beamlit.Labels {
 		labels[key] = value
 	}
 	labels["managed-by"] = "beamlit-operator"
+	if model.Spec.OffloadingConfig != nil {
+		labels["offloading-enabled"] = strconv.FormatBool(!model.Spec.OffloadingConfig.Disabled)
+	}
 	return labels
 }

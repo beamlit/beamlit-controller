@@ -197,11 +197,9 @@ func (mw *k8sMetricWatcher) start(ctx context.Context) {
 				}
 				continue
 			}
-			if mw.latestStatus.Reached != reached {
-				mw.latestStatus.ModelName = mw.model
-				mw.latestStatus.Reached = reached
-				mw.metricChan <- mw.latestStatus
-			}
+			mw.latestStatus.ModelName = mw.model
+			mw.latestStatus.Reached = reached
+			mw.metricChan <- mw.latestStatus
 		}
 	}
 }

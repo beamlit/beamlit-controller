@@ -51,7 +51,6 @@ import (
 	"github.com/beamlit/operator/internal/informers/metric"
 	beamlitclientset "github.com/tmp-moon/beamlit-proxy/clientset"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -208,7 +207,7 @@ func main() {
 		HealthInformer:       healthInformer,
 		HealthStatusChan:     healthChan,
 		Offloader:            offloader,
-		ManagedModels:        make(map[string]v1.ObjectReference),
+		ManagedModels:        make(map[string]controller.ManagedModel),
 		OngoingOffloadings:   sync.Map{},
 		ModelState:           sync.Map{},
 		DefaultRemoteBackend: nil,
