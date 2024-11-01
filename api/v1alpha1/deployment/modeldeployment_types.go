@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package deployment
 
 import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
@@ -28,10 +28,25 @@ type ModelDeploymentSpec struct {
 	// +kubebuilder:validation:Required
 	Model string `json:"model"`
 
+	// Enabled is the flag to enable the model deployment on Beamlit
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=true
+	Enabled bool `json:"enabled,omitempty"`
+
 	// ModelSourceRef is the reference to the model source
 	// This is either a Deployment, StatefulSet... (anything that is a template for a pod)
 	// +kubebuilder:validation:Required
 	ModelSourceRef corev1.ObjectReference `json:"modelSourceRef"`
+
+	// ServiceRef is the reference to the service exposing the model inside the cluster
+	// If not specified, a local service will be created
+	// +kubebuilder:validation:Optional
+	ServiceRef *ServiceReference `json:"serviceRef,omitempty"`
+
+	// MetricServiceRef is the reference to the service exposing the metrics inside the cluster
+	// If not specified, the model deployment will not be offloaded
+	// +kubebuilder:validation:Optional
+	MetricServiceRef *ServiceReference `json:"metricServiceRef,omitempty"`
 
 	// Environment is the environment attached to the model deployment
 	// If not specified, the model deployment will be deployed in the "prod" environment
@@ -42,19 +57,41 @@ type ModelDeploymentSpec struct {
 	// Policies is the list of policies to apply to the model deployment
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default={}
-	Policies []string `json:"policies,omitempty"`
+	Policies []PolicyRef `json:"policies,omitempty"`
 
 	// ServerlessConfig is the serverless configuration for the model deployment
 	// If not specified, the model deployment will be deployed with a default serverless configuration
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default={}
 	ServerlessConfig *ServerlessConfig `json:"serverlessConfig,omitempty"`
 
 	// OffloadingConfig is the offloading configuration for the model deployment
 	// If not specified, the model deployment will not be offloaded
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default={}
 	OffloadingConfig *OffloadingConfig `json:"offloadingConfig,omitempty"`
+}
+
+type PolicyRefType string
+
+const (
+	PolicyRefTypeRemotePolicy PolicyRefType = "remotePolicy"
+	PolicyRefTypeLocalPolicy  PolicyRefType = "localPolicy"
+)
+
+// PolicyRef is the reference to a policy
+type PolicyRef struct {
+	// RefType is the type of the policy reference
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=remotePolicy;localPolicy
+	// +kubebuilder:default=remotePolicy
+	RefType PolicyRefType `json:"refType"`
+
+	// Ref is the reference to the policy
+	// +kubebuilder:validation:Optional
+	Ref corev1.ObjectReference `json:",inline"`
+
+	// Name is the name of the policy
+	// +kubebuilder:validation:Optional
+	Name string `json:"name"`
 }
 
 type ServerlessConfig struct {
@@ -97,16 +134,6 @@ type ServerlessConfig struct {
 }
 
 type OffloadingConfig struct {
-	// Disabled is the flag to disable offloading
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=false
-	Disabled bool `json:"disabled,omitempty"`
-
-	// ServiceRef is the reference to the service exposing the model inside the cluster
-	// If not specified, a local service will be created
-	// +kubebuilder:validation:Optional
-	ServiceRef *ServiceReference `json:"serviceRef,omitempty"`
-
 	// RemoteBackend is the reference to the remote backend
 	// By default, the model deployment will be offloaded to the default backend
 	// +kubebuilder:validation:Optional
@@ -200,14 +227,23 @@ type OffloadingBehavior struct {
 
 // ModelDeploymentStatus defines the observed state of ModelDeployment
 type ModelDeploymentStatus struct {
-	Conditions        []metav1.Condition `json:"conditions,omitempty"`
-	AvailableReplicas int32              `json:"availableReplicas,omitempty"`
 	// OffloadingStatus is the status of the offloading
 	// True if the model deployment is offloaded
 	OffloadingStatus bool `json:"offloadingStatus,omitempty"`
+
+	// ServingPort is the port inside the pod that the model is served on
+	ServingPort int32 `json:"servingPort,omitempty"`
+
+	// MetricPort is the port inside the pod that the metrics are exposed on
+	MetricPort int32 `json:"metricPort,omitempty"`
+
 	// Workspace is the workspace of the model deployment
-	Workspace          string      `json:"workspace,omitempty"`
+	Workspace string `json:"workspace,omitempty"`
+
+	// CreatedAtOnBeamlit is the time when the model deployment was created on Beamlit
 	CreatedAtOnBeamlit metav1.Time `json:"createdAtOnBeamlit,omitempty"`
+
+	// UpdatedAtOnBeamlit is the time when the model deployment was updated on Beamlit
 	UpdatedAtOnBeamlit metav1.Time `json:"updatedAtOnBeamlit,omitempty"`
 }
 

@@ -1,4 +1,6 @@
 ## Append samples of your project ##
 resources:
-- model_v1alpha1_modeldeployment.yaml
+  - deployment_v1alpha1_modeldeployment.yaml
+  - deployment_v1alpha1_tooldeployment.yaml
+  - authorization_v1alpha1_policy.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

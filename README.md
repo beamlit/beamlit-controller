@@ -42,7 +42,7 @@ helm install beamlit-operator . -n beamlit --create-namespace --full-install --
 
 ```sh
 kubectl apply -f - << EOF
-apiVersion: model.beamlit.io/v1alpha1
+apiVersion: model.beamlit.com/v1alpha1
 kind: ModelDeployment
 metadata:
   labels:
@@ -68,7 +68,7 @@ EOF
 
 ```sh
 kubectl apply -f - << EOF
-apiVersion: model.beamlit.io/v1alpha1
+apiVersion: model.beamlit.com/v1alpha1
 kind: ModelDeployment
 metadata:
   labels:

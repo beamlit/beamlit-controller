@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
+	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
 	proxyv1alpha1 "github.com/tmp-moon/beamlit-proxy/api/v1alpha1"
 	beamlitclientset "github.com/tmp-moon/beamlit-proxy/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +25,7 @@ func newBeamlitGatewayOffloader(ctx context.Context, kubeClient kubernetes.Inter
 }
 
 func (o *beamlitGatewayOffloader) Configure(ctx context.Context, model *modelv1alpha1.ModelDeployment, localBackend *modelv1alpha1.ServiceReference, remoteBackend *modelv1alpha1.RemoteBackend, remoteBackendWeight int) error {
-	service, err := o.kubeClient.CoreV1().Services(model.Spec.OffloadingConfig.ServiceRef.Namespace).Get(ctx, model.Spec.OffloadingConfig.ServiceRef.Name, metav1.GetOptions{})
+	service, err := o.kubeClient.CoreV1().Services(model.Spec.ServiceRef.Namespace).Get(ctx, model.Spec.ServiceRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -95,6 +95,6 @@ func (o *beamlitGatewayOffloader) Cleanup(ctx context.Context, model *modelv1alp
 
 func (o *beamlitGatewayOffloader) variableReplace(pathPrefix string, model *modelv1alpha1.ModelDeployment) string {
 	pathPrefix = strings.ReplaceAll(pathPrefix, "$workspace", o.workspace)
-	pathPrefix = strings.ReplaceAll(pathPrefix, "$model", model.Name)
+	pathPrefix = strings.ReplaceAll(pathPrefix, "$model", model.Spec.Model)
 	return pathPrefix
 }

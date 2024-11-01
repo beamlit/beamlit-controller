@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
+	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -73,7 +73,7 @@ func (s *kubernetesConfigurer) mirrorEndpointSlices(ctx context.Context, service
 
 			var userServiceEndpointSlice discoveryv1.EndpointSlice
 			for _, slice := range userServiceEndpointSlices.Items {
-				if slice.Labels["beamlit.io/to-update"] == "true" {
+				if slice.Labels["beamlit.com/to-update"] == "true" {
 					userServiceEndpointSlice = slice
 					break
 				}

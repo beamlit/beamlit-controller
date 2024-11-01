@@ -4,45 +4,100 @@ kind: ClusterRole
 metadata:
   name: manager-role
 rules:
-  - apiGroups:
-      - apps
-    resources:
-      - deployments
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - autoscaling
-    resources:
-      - horizontalpodautoscalers
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - model.beamlit.io
-    resources:
-      - modeldeployments
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - model.beamlit.io
-    resources:
-      - modeldeployments/finalizers
-    verbs:
-      - update
-  - apiGroups:
-      - model.beamlit.io
-    resources:
-      - modeldeployments/status
-    verbs:
-      - get
-      - patch
-      - update
+- apiGroups:
+  - ""
+  - metrics.k8s.io
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - deployments/scale
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - authorization.beamlit.com
+  resources:
+  - policies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - authorization.beamlit.com
+  resources:
+  - policies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - authorization.beamlit.com
+  resources:
+  - policies/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - deployment.beamlit.com
+  resources:
+  - modeldeployments
+  - tooldeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - deployment.beamlit.com
+  resources:
+  - modeldeployments/finalizers
+  - tooldeployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - deployment.beamlit.com
+  resources:
+  - modeldeployments/status
+  - tooldeployments/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch

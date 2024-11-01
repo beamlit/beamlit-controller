@@ -64,3 +64,16 @@ func retrievePodTemplate(ctx context.Context, kubernetesClient client.Client, ki
 
 	return *podTemplate, nil
 }
+
+func RetrievePodPort(ctx context.Context, kubernetesClient client.Client, serviceReference *corev1.ObjectReference, targetPort int) (int, error) {
+	service := corev1.Service{}
+	if err := kubernetesClient.Get(ctx, types.NamespacedName{Name: serviceReference.Name, Namespace: serviceReference.Namespace}, &service); err != nil {
+		return 0, err
+	}
+	for _, port := range service.Spec.Ports {
+		if int(port.Port) == targetPort {
+			return int(port.TargetPort.IntVal), nil
+		}
+	}
+	return 0, fmt.Errorf("port %d not found", targetPort)
+}

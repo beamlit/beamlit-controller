@@ -41,7 +41,11 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
+	beamlitclientset "github.com/tmp-moon/beamlit-proxy/clientset"
+	corev1 "k8s.io/api/core/v1"
+
+	beamlitauthorizationv1alpha1 "github.com/beamlit/operator/api/v1alpha1/authorization"
+	beamlitdeploymentv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
 	"github.com/beamlit/operator/internal/beamlit"
 	"github.com/beamlit/operator/internal/config"
 	"github.com/beamlit/operator/internal/controller"
@@ -49,8 +53,6 @@ import (
 	"github.com/beamlit/operator/internal/dataplane/offloader"
 	"github.com/beamlit/operator/internal/informers/health"
 	"github.com/beamlit/operator/internal/informers/metric"
-	beamlitclientset "github.com/tmp-moon/beamlit-proxy/clientset"
-	corev1 "k8s.io/api/core/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -62,7 +64,8 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(modelv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(beamlitauthorizationv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(beamlitdeploymentv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -122,7 +125,7 @@ func main() {
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: *cfg.ProbeAddr,
 		LeaderElection:         *cfg.EnableLeaderElection,
-		LeaderElectionID:       "0e22b10b.beamlit.io",
+		LeaderElectionID:       "0e22b10b.beamlit.com",
 	}
 
 	namespacesList := make(map[string]cache.Config)
@@ -183,7 +186,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	go configurer.Start(ctx, &modelv1alpha1.ServiceReference{
+	go configurer.Start(ctx, &beamlitdeploymentv1alpha1.ServiceReference{
 		ObjectReference: corev1.ObjectReference{
 			Namespace: *cfg.ProxyService.Namespace,
 			Name:      *cfg.ProxyService.Name,
@@ -197,9 +200,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	client := mgr.GetClient()
+	scheme := mgr.GetScheme()
 	ctrl := &controller.ModelDeploymentReconciler{
-		Client:               mgr.GetClient(),
-		Scheme:               mgr.GetScheme(),
+		Client:               client,
+		Scheme:               scheme,
 		BeamlitClient:        beamlitClient,
 		MetricInformer:       metricInformer,
 		MetricStatusChan:     metricChan,
@@ -215,7 +220,7 @@ func main() {
 	}
 
 	if cfg.DefaultRemoteBackend.Host != nil {
-		ctrl.DefaultRemoteBackend = &modelv1alpha1.RemoteBackend{
+		ctrl.DefaultRemoteBackend = &beamlitdeploymentv1alpha1.RemoteBackend{
 			Host: *cfg.DefaultRemoteBackend.Host,
 		}
 		if cfg.DefaultRemoteBackend.AuthConfig != nil {
@@ -236,6 +241,22 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "ModelDeployment")
 		os.Exit(1)
 	}
+	if err = (&controller.PolicyReconciler{
+		Client:          client,
+		Scheme:          scheme,
+		BeamlitClient:   beamlitClient,
+		ManagedPolicies: make(map[string]controller.ManagedPolicyRef),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Policy")
+		os.Exit(1)
+	}
+	if err = (&controller.ToolDeploymentReconciler{
+		Client: client,
+		Scheme: scheme,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ToolDeployment")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -248,6 +269,7 @@ func main() {
 	}
 
 	go ctrl.WatchForInformerUpdates(ctx)
+	go ctrl.PolicyUpdate(ctx)
 
 	go setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {

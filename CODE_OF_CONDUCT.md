@@ -39,7 +39,7 @@ when an individual is representing the project or its community.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported by contacting the code of conduct team via
-[conduct@beamlit.io](mailto:conduct@beamlit.io).
+[conduct@beamlit.com](mailto:conduct@beamlit.com).
 
 This Code of Conduct is adapted from the Contributor Covenant
 (http://contributor-covenant.org), version 1.2.0, available at

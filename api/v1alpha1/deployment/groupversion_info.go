@@ -16,8 +16,9 @@ limitations under the License.
 
 // Package v1alpha1 contains API Schema definitions for the model v1alpha1 API group
 // +kubebuilder:object:generate=true
-// +groupName=model.beamlit.io
-package v1alpha1
+// +groupName=deployment.beamlit.com
+// +versionName=v1alpha1
+package deployment
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -26,7 +27,7 @@ import (
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "model.beamlit.io", Version: "v1alpha1"}
+	GroupVersion = schema.GroupVersion{Group: "deployment.beamlit.com", Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

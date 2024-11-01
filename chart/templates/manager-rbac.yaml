@@ -8,67 +8,18 @@ metadata:
   {{- include "chart.labels" $ | nindent 4 }}
 rules:
 - apiGroups:
-  - ""
-  resources:
-  - services
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - delete
-  - update
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - services
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - delete
-  - update
-  - patch
-- apiGroups:
-  - gateway.networking.k8s.io
-  resources:
-  - httproutes
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - delete
-  - update
-  - patch
-- apiGroups:
   - apps
   resources:
   - deployments
-  - replicasets
-  - statefulsets
   - deployments/scale
-  - replicasets/scale
-  - statefulsets/scale
   verbs:
   - get
   - list
   - watch
 - apiGroups:
-  - autoscaling
+  - authorization.beamlit.com
   resources:
-  - horizontalpodautoscalers
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - model.beamlit.io
-  resources:
-  - modeldeployments
+  - policies
   verbs:
   - create
   - delete
@@ -78,39 +29,81 @@ rules:
   - update
   - watch
 - apiGroups:
-  - model.beamlit.io
+  - authorization.beamlit.com
   resources:
-  - modeldeployments/finalizers
+  - policies/finalizers
   verbs:
   - update
 - apiGroups:
-  - model.beamlit.io
+  - authorization.beamlit.com
   resources:
-  - modeldeployments/status
+  - policies/status
   verbs:
   - get
   - patch
   - update
 - apiGroups:
-  - metrics.k8s.io
+  - ""
   resources:
-  - "*"
+  - services
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
+- apiGroups:
+  - deployment.beamlit.com
+  resources:
+  - modeldeployments
+  - tooldeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - deployment.beamlit.com
+  resources:
+  - modeldeployments/finalizers
+  - tooldeployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - deployment.beamlit.com
+  resources:
+  - modeldeployments/status
+  - tooldeployments/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - discovery.k8s.io
   resources:
   - endpointslices
   verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  - metrics.k8s.io
+  resources:
+  - pods
+  verbs:
   - get
   - list
   - watch
-  - create
-  - delete
-  - update
-  - patch
 
 ---
 {{ end }}

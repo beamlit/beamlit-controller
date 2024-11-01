@@ -20,5 +20,9 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the Project itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
+- tooldeployment_editor_role.yaml
+- tooldeployment_viewer_role.yaml
+- policy_editor_role.yaml
+- policy_viewer_role.yaml
 - modeldeployment_editor_role.yaml
 - modeldeployment_viewer_role.yaml

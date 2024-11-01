@@ -1,0 +1,23 @@
+# permissions for end users to view tooldeployments.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: operator
+    app.kubernetes.io/managed-by: kustomize
+  name: tooldeployment-viewer-role
+rules:
+- apiGroups:
+  - beamlit.com
+  resources:
+  - tooldeployments
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - beamlit.com
+  resources:
+  - tooldeployments/status
+  verbs:
+  - get

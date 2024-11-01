@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
+	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
 	beamlitclientset "github.com/tmp-moon/beamlit-proxy/clientset"
 	"k8s.io/client-go/kubernetes"
 )

@@ -1,14 +1,15 @@
+# permissions for end users to edit policies.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "chart.fullname" . }}-modeldeployment-editor-role
+  name: {{ include "chart.fullname" . }}-policy-editor-role
   labels:
-  {{- include "chart.labels" . | nindent 4 }}
+    {{- include "chart.labels" . | nindent 4 }}
 rules:
   - apiGroups:
-      - model.beamlit.com
+      - beamlit.com
     resources:
-      - modeldeployments
+      - policies
     verbs:
       - create
       - delete
@@ -18,8 +19,8 @@ rules:
       - update
       - watch
   - apiGroups:
-      - model.beamlit.com
+      - beamlit.com
     resources:
-      - modeldeployments/status
+      - policies/status
     verbs:
       - get

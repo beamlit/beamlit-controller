@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v1alpha1 "github.com/beamlit/operator/api/v1alpha1"
+	deployment "github.com/beamlit/operator/api/v1alpha1/deployment"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,7 +41,7 @@ func (m *MockOffloader) EXPECT() *MockOffloaderMockRecorder {
 }
 
 // Cleanup mocks base method.
-func (m *MockOffloader) Cleanup(ctx context.Context, model *v1alpha1.ModelDeployment) error {
+func (m *MockOffloader) Cleanup(ctx context.Context, model *deployment.ModelDeployment) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Cleanup", ctx, model)
 	ret0, _ := ret[0].(error)
@@ -55,15 +55,15 @@ func (mr *MockOffloaderMockRecorder) Cleanup(ctx, model any) *gomock.Call {
 }
 
 // Configure mocks base method.
-func (m *MockOffloader) Configure(ctx context.Context, model *v1alpha1.ModelDeployment, backendServiceRef, remoteServiceRef *v1alpha1.ServiceReference, backendWeight int) error {
+func (m *MockOffloader) Configure(ctx context.Context, model *deployment.ModelDeployment, localBackend *deployment.ServiceReference, remoteBackend *deployment.RemoteBackend, remoteBackendWeight int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Configure", ctx, model, backendServiceRef, remoteServiceRef, backendWeight)
+	ret := m.ctrl.Call(m, "Configure", ctx, model, localBackend, remoteBackend, remoteBackendWeight)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Configure indicates an expected call of Configure.
-func (mr *MockOffloaderMockRecorder) Configure(ctx, model, backendServiceRef, remoteServiceRef, backendWeight any) *gomock.Call {
+func (mr *MockOffloaderMockRecorder) Configure(ctx, model, localBackend, remoteBackend, remoteBackendWeight any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Configure", reflect.TypeOf((*MockOffloader)(nil).Configure), ctx, model, backendServiceRef, remoteServiceRef, backendWeight)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Configure", reflect.TypeOf((*MockOffloader)(nil).Configure), ctx, model, localBackend, remoteBackend, remoteBackendWeight)
 }

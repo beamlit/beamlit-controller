@@ -22,7 +22,7 @@ import (
 	"slices"
 	"time"
 
-	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1"
+	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -253,7 +253,7 @@ func (s *kubernetesConfigurer) createMirroredEndpointsSlice(ctx context.Context,
 	esApplyConfig := discoveryv1apply.EndpointSlice(fmt.Sprintf("%s-beamlit-mirrored", serviceRef.Name), serviceRef.Namespace).
 		WithAddressType(mirroredEndpointsSlice.Items[0].AddressType).
 		WithLabels(map[string]string{
-			"beamlit.io/to-update":                   "true",
+			"beamlit.com/to-update":                  "true",
 			"kubernetes.io/service-name":             serviceRef.Name,
 			"endpointslice.kubernetes.io/managed-by": "beamlit-operator",
 		})
@@ -365,6 +365,10 @@ func (s *kubernetesConfigurer) Unconfigure(ctx context.Context, service *modelv1
 	if err != nil {
 		return err
 	}
+	err = s.watchEndpointsSliceToBeUpdated(ctx, service)
+	if err != nil {
+		return err
+	}
 	logger.V(1).Info("Successfully unregistered service", "Name", service.Name)
 	return nil
 }
@@ -384,7 +388,14 @@ func (s *kubernetesConfigurer) stopWatchers(ctx context.Context, serviceRef *mod
 		return fmt.Errorf("stop channel not found for service %s", serviceRef.Name)
 	}
 	for _, ch := range stopCh {
-		close(ch)
+		select {
+		case _, ok := <-ch:
+			if ok {
+				close(ch)
+			}
+		default:
+			return nil
+		}
 	}
 	return nil
 }
@@ -402,7 +413,6 @@ func (s *kubernetesConfigurer) addKubernetesManagedEndpointsSlice(ctx context.Co
 			return err
 		}
 	}
-	delete(s.initialEndpointPerLocalService, types.NamespacedName{Namespace: service.Namespace, Name: service.Name})
 	return nil
 }
 
@@ -448,4 +458,39 @@ func (s *kubernetesConfigurer) deleteExternalIPsFromGatewayService(ctx context.C
 		return err
 	}
 	return nil
+}
+
+func (s *kubernetesConfigurer) watchEndpointsSliceToBeUpdated(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
+	retry := 0
+	maxRetries := 5
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			initialEndpoints := s.initialEndpointPerLocalService[types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name}]
+			if len(initialEndpoints) == 0 {
+				return nil
+			}
+			for _, endpoint := range initialEndpoints {
+				endpointSlice, err := s.kubeClient.DiscoveryV1().EndpointSlices(endpoint.Namespace).Get(ctx, endpoint.Name, metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				if endpointSlice.Labels["endpointslice.kubernetes.io/managed-by"] == "endpointslice-controller.k8s.io" {
+					// Check if there are endpoints in the endpoint slice
+					if len(endpointSlice.Endpoints) > 0 {
+						delete(s.initialEndpointPerLocalService, types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name})
+						return nil
+					}
+				}
+			}
+			retry++
+			if retry >= maxRetries {
+				delete(s.initialEndpointPerLocalService, types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name})
+				return nil
+			}
+			time.Sleep(time.Duration(retry) * 100 * time.Millisecond)
+		}
+	}
 }

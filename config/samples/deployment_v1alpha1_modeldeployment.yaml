@@ -1,27 +1,30 @@
-apiVersion: model.beamlit.io/v1alpha1
+apiVersion: deployment.beamlit.com/v1alpha1
 kind: ModelDeployment
 metadata:
   namespace: beamlit
   labels:
     app.kubernetes.io/name: operator
     app.kubernetes.io/managed-by: kustomize
-  name: modeldeployment-sample
+  name: test-model-deployment
 spec:
-  model: "test"
+  model: "offloading-model"
   environment: "production"
   modelSourceRef:
     apiVersion: apps/v1 # mandatory
     kind: Deployment # mandatory
     name: php-apache # mandatory
     namespace: beamlit # remove
+  serviceRef:
+    name: php-apache
+    namespace: beamlit
+    targetPort: 80
+  policies:
+    - name: policy-sample
+      namespace: beamlit
+      refType: localPolicy
   offloadingConfig:
-    disabled: false
     behavior:
       percentage: 50
-    serviceRef:
-      name: php-apache
-      namespace: beamlit
-      targetPort: 80
     metrics:
       - type: Resource
         resource:

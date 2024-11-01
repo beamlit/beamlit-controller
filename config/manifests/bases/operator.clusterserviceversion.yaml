@@ -13,7 +13,17 @@ spec:
     - description: ModelDeployment is the Schema for the modeldeployments API
       displayName: Model Deployment
       kind: ModelDeployment
-      name: modeldeployments.model.beamlit.io
+      name: modeldeployments.deployment.beamlit.com
+      version: v1alpha1
+    - description: Policy is the Schema for the policies API
+      displayName: Policy
+      kind: Policy
+      name: policies.authorization.beamlit.com
+      version: v1alpha1
+    - description: ToolDeployment is the Schema for the tooldeployments API
+      displayName: Tool Deployment
+      kind: ToolDeployment
+      name: tooldeployments.deployment.beamlit.com
       version: v1alpha1
   description: beamlit operator
   displayName: operator
@@ -40,5 +50,5 @@ spec:
     url: https://operator.domain
   maturity: alpha
   provider:
-    name: "beamlit.io\e[C"
+    name: "beamlit.com\e[C"
   version: 0.0.0

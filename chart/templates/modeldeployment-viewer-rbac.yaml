@@ -5,17 +5,17 @@ metadata:
   labels:
   {{- include "chart.labels" . | nindent 4 }}
 rules:
-- apiGroups:
-  - model.beamlit.io
-  resources:
-  - modeldeployments
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - model.beamlit.io
-  resources:
-  - modeldeployments/status
-  verbs:
-  - get
+  - apiGroups:
+      - model.beamlit.com
+    resources:
+      - modeldeployments
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - model.beamlit.com
+    resources:
+      - modeldeployments/status
+    verbs:
+      - get

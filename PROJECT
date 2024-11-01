@@ -2,22 +2,41 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-domain: beamlit.io
+domain: beamlit.com
 layout:
-- go.kubebuilder.io/v4
+  - go.kubebuilder.io/v4
+multigroup: true
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: operator
 repo: github.com/beamlit/operator
 resources:
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: beamlit.io
-  group: model
-  kind: ModelDeployment
-  path: github.com/beamlit/operator/api/v1alpha1
-  version: v1alpha1
+  - api:
+      crdVersion: v1
+      namespaced: true
+    controller: true
+    domain: beamlit.com
+    group: deployment
+    kind: ModelDeployment
+    path: github.com/beamlit/operator/api/v1alpha1/deployment
+    version: v1alpha1
+  - api:
+      crdVersion: v1
+      namespaced: true
+    controller: true
+    domain: beamlit.com
+    group: deployment
+    kind: Policy
+    path: github.com/beamlit/operator/api/v1alpha1/authorization
+    version: v1alpha1
+  - api:
+      crdVersion: v1
+      namespaced: true
+    controller: true
+    domain: beamlit.com
+    group: authorization
+    kind: ToolDeployment
+    path: github.com/beamlit/operator/api/v1alpha1/deployment
+    version: v1alpha1
 version: "3"

@@ -6,8 +6,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/beamlit/operator/api/v1alpha1"
 	"gopkg.in/yaml.v2"
+
+	beamlitdeploymentv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
 )
 
 type RemoteDeploymentPlatformType string
@@ -39,7 +40,7 @@ type Config struct {
 		Host *string `json:"host,omitempty" yaml:"host,omitempty"`
 
 		// AuthConfig is the authentication configuration for the remote backend
-		AuthConfig *v1alpha1.AuthConfig `json:"auth_config,omitempty" yaml:"authConfig,omitempty"`
+		AuthConfig *beamlitdeploymentv1alpha1.AuthConfig `json:"auth_config,omitempty" yaml:"authConfig,omitempty"`
 
 		// PathPrefix is the path prefix for the remote backend
 		PathPrefix *string `json:"path_prefix,omitempty" yaml:"pathPrefix,omitempty"`
@@ -47,7 +48,7 @@ type Config struct {
 		// HeadersToAdd is the list of headers to add to the requests
 		HeadersToAdd map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 
-		Scheme *v1alpha1.SupportedScheme `json:"scheme,omitempty" yaml:"scheme,omitempty"`
+		Scheme *beamlitdeploymentv1alpha1.SupportedScheme `json:"scheme,omitempty" yaml:"scheme,omitempty"`
 	} `json:"default_remote_backend,omitempty" yaml:"defaultRemoteBackend,omitempty"`
 
 	Deployment struct {

@@ -1,0 +1,15 @@
+apiVersion: authorization.beamlit.com/v1alpha1
+kind: Policy
+metadata:
+  labels:
+    app.kubernetes.io/name: operator
+    app.kubernetes.io/managed-by: kustomize
+  name: policy-sample
+  namespace: beamlit
+spec:
+  type: location
+  locations:
+    - type: country
+      name: "us"
+    - type: continent
+      name: "na"

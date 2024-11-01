@@ -27,10 +27,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
+	beamlitcomv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
 )
 
-var _ = Describe("ModelDeployment Controller", func() {
+var _ = Describe("ToolDeployment Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
@@ -40,13 +40,13 @@ var _ = Describe("ModelDeployment Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		modeldeployment := &modelv1alpha1.ModelDeployment{}
+		tooldeployment := &beamlitcomv1alpha1.ToolDeployment{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind ModelDeployment")
-			err := k8sClient.Get(ctx, typeNamespacedName, modeldeployment)
+			By("creating the custom resource for the Kind ToolDeployment")
+			err := k8sClient.Get(ctx, typeNamespacedName, tooldeployment)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &modelv1alpha1.ModelDeployment{
+				resource := &beamlitcomv1alpha1.ToolDeployment{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -59,16 +59,16 @@ var _ = Describe("ModelDeployment Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &modelv1alpha1.ModelDeployment{}
+			resource := &beamlitcomv1alpha1.ToolDeployment{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance ModelDeployment")
+			By("Cleanup the specific resource instance ToolDeployment")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &ModelDeploymentReconciler{
+			controllerReconciler := &ToolDeploymentReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
 			}
