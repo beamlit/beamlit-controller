@@ -36,6 +36,7 @@ type MetricInformerType int
 
 const (
 	K8SMetricInformerType MetricInformerType = iota
+	PrometheusMetricInformerType
 )
 
 // MetricInformerFactory is a factory function for creating a MetricInformer.
@@ -46,7 +47,8 @@ var (
 	// MetricInformerFactories is a map of metric informer factories for different types
 	// when a new metric informer is added, it should be registered here
 	metricInformerFactories = map[MetricInformerType]metricInformerFactory{
-		K8SMetricInformerType: newK8sMetricInformer,
+		K8SMetricInformerType:        newK8sMetricInformer,
+		PrometheusMetricInformerType: newPrometheusMetricInformer,
 	}
 
 	ErrUnknownInformerType = errors.New("unknown metric informer type")

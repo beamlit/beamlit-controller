@@ -231,26 +231,23 @@ func (r *ModelDeploymentReconciler) createOrUpdate(ctx context.Context, model *v
 
 func (r *ModelDeploymentReconciler) configureOffloading(ctx context.Context, model *v1alpha1.ModelDeployment) error {
 	logger := log.FromContext(ctx)
-	if model.Spec.OffloadingConfig == nil {
-		return nil
+	logger.V(1).Info("Unregistering health and metric watchers for ModelDeployment, if any", "Name", model.Name)
+	r.HealthInformer.Unregister(ctx, fmt.Sprintf("%s/%s", model.Namespace, model.Name))
+	r.MetricInformer.Unregister(ctx, fmt.Sprintf("%s/%s", model.Namespace, model.Name))
+	logger.V(1).Info("Unregistering offloading for ModelDeployment", "Name", model.Name)
+	if err := r.Configurer.Unconfigure(ctx, model.Spec.ServiceRef); err != nil {
+		logger.V(0).Error(err, "Failed to unconfigure local service for ModelDeployment")
+		return err
 	}
-	_, present := r.OngoingOffloadings.Load(fmt.Sprintf("%s/%s", model.Namespace, model.Name))
-	if !model.Spec.Enabled && present {
-		logger.V(1).Info("Unregistering offloading for ModelDeployment", "Name", model.Name)
-		if err := r.Configurer.Unconfigure(ctx, model.Spec.ServiceRef); err != nil {
-			logger.V(0).Error(err, "Failed to unconfigure local service for ModelDeployment")
-			return err
-		}
-		r.HealthInformer.Unregister(ctx, fmt.Sprintf("%s/%s", model.Namespace, model.Name))
-		r.MetricInformer.Unregister(ctx, fmt.Sprintf("%s/%s", model.Namespace, model.Name))
-		if err := r.Offloader.Cleanup(ctx, model); err != nil {
-			logger.V(0).Error(err, "Failed to cleanup offloading for ModelDeployment")
-			return err
-		}
-		r.OngoingOffloadings.Delete(fmt.Sprintf("%s/%s", model.Namespace, model.Name))
-		r.ModelState.Delete(fmt.Sprintf("%s/%s", model.Namespace, model.Name))
-		delete(r.ManagedModels, fmt.Sprintf("%s/%s", model.Namespace, model.Name))
-		logger.V(1).Info("Successfully unregistered offloading for ModelDeployment", "Name", model.Name)
+	if err := r.Offloader.Cleanup(ctx, model); err != nil {
+		logger.V(0).Error(err, "Failed to cleanup offloading for ModelDeployment")
+		return err
+	}
+	r.OngoingOffloadings.Delete(fmt.Sprintf("%s/%s", model.Namespace, model.Name))
+	r.ModelState.Delete(fmt.Sprintf("%s/%s", model.Namespace, model.Name))
+	delete(r.ManagedModels, fmt.Sprintf("%s/%s", model.Namespace, model.Name))
+	logger.V(1).Info("Successfully unregistered offloading for ModelDeployment", "Name", model.Name)
+	if !model.Spec.Enabled || model.Spec.OffloadingConfig == nil {
 		return nil
 	}
 	if model.Spec.OffloadingConfig.RemoteBackend == nil { // TODO: Make this really configurable
@@ -294,6 +291,10 @@ func (r *ModelDeploymentReconciler) finalizeModel(ctx context.Context, model *v1
 	if model.Spec.OffloadingConfig == nil {
 		return nil
 	}
+	r.MetricInformer.Unregister(ctx, fmt.Sprintf("%s/%s", model.Namespace, model.Name))
+	logger.V(1).Info("Successfully removed metrics watcher for ModelDeployment", "Name", model.Name)
+	r.HealthInformer.Unregister(ctx, fmt.Sprintf("%s/%s", model.Namespace, model.Name))
+	logger.V(1).Info("Successfully removed health watcher for ModelDeployment", "Name", model.Name)
 	logger.V(1).Info("Successfully cleaned up offloading for ModelDeployment", "Name", model.Name)
 	if err := r.Configurer.Unconfigure(ctx, model.Spec.ServiceRef); err != nil {
 		logger.V(0).Error(err, "Failed to unconfigure local service for ModelDeployment")
@@ -304,10 +305,6 @@ func (r *ModelDeploymentReconciler) finalizeModel(ctx context.Context, model *v1
 		return err
 	}
 	logger.V(1).Info("Successfully unregistered local service for ModelDeployment", "Name", model.Name)
-	r.MetricInformer.Unregister(ctx, fmt.Sprintf("%s/%s", model.Namespace, model.Name))
-	logger.V(1).Info("Successfully removed metrics watcher for ModelDeployment", "Name", model.Name)
-	r.HealthInformer.Unregister(ctx, fmt.Sprintf("%s/%s", model.Namespace, model.Name))
-	logger.V(1).Info("Successfully removed health watcher for ModelDeployment", "Name", model.Name)
 	if err := r.BeamlitClient.DeleteModelDeployment(ctx, model.Spec.Model, model.Spec.Environment); err != nil {
 		logger.V(0).Error(err, "Failed to delete ModelDeployment")
 		return err

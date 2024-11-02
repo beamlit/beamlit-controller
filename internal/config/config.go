@@ -32,6 +32,8 @@ type Config struct {
 	EnableHTTP2 *bool `json:"enable_http2,omitempty" yaml:"enableHTTP2,omitempty"`
 	// Namespaces is the list of namespaces to watch.
 	Namespaces *string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
+	// MetricInformerConfig is the configuration for the metric informer.
+	MetricInformerConfig *MetricInformersConfig `json:"metric_informer,omitempty" yaml:"metricInformer,omitempty"`
 	// Proxy is the configuration for the proxy service.
 	ProxyService ProxyServiceConfig `json:"proxy_service,omitempty" yaml:"proxyService,omitempty"`
 	// DefaultRemoteBackend is the configuration for the default remote backend service.
@@ -71,6 +73,26 @@ type ProxyServiceConfig struct {
 	AdminPort *int `json:"admin_port,omitempty" yaml:"adminPort,omitempty"`
 }
 
+type MetricInformerType string
+
+const (
+	MetricInformerTypePrometheus MetricInformerType = "prometheus"
+	MetricInformerTypeKubernetes MetricInformerType = "kubernetes"
+)
+
+type MetricInformersConfig struct {
+	// Type is the type of the metric informer.
+	Type MetricInformerType `json:"type,omitempty" yaml:"type,omitempty"`
+
+	// Prometheus is the configuration for the prometheus metric informer.
+	Prometheus *PrometheusMetricInformerConfig `json:"prometheus,omitempty" yaml:"prometheus,omitempty"`
+}
+
+type PrometheusMetricInformerConfig struct {
+	// Address is the address of the prometheus server.
+	Address string `json:"address,omitempty" yaml:"address,omitempty"`
+}
+
 func (c *Config) Validate() error {
 	if c.ProxyService.Namespace == nil || c.ProxyService.Name == nil || c.ProxyService.Port == nil || c.ProxyService.AdminPort == nil {
 		return fmt.Errorf("proxy service is not configured")
@@ -85,6 +107,9 @@ func (c *Config) Default() {
 	c.EnableLeaderElection = toPointer(false)
 	c.MetricsAddr = toPointer(":8080")
 	c.ProbeAddr = toPointer(":8081")
+	c.MetricInformerConfig = &MetricInformersConfig{
+		Type: MetricInformerTypeKubernetes,
+	}
 }
 
 func (c *Config) FromFile(name string, reader io.Reader) error {

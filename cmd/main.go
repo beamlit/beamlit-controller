@@ -30,6 +30,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -144,31 +145,46 @@ func main() {
 
 	ctx := ctrl.SetupSignalHandler()
 
-	config, err := ctrl.GetConfig()
+	kubeConfig, err := ctrl.GetConfig()
 	if err != nil {
 		setupLog.Error(err, "unable to get config")
 		os.Exit(1)
 	}
-	mgr, err := ctrl.NewManager(config, ctrlOpts)
+	mgr, err := ctrl.NewManager(kubeConfig, ctrlOpts)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-	metricInformer, err := metric.NewMetricInformer(ctx, config, metric.K8SMetricInformerType)
+	metricInformer, err := metric.NewMetricInformer(ctx, kubeConfig, metric.K8SMetricInformerType)
 	if err != nil {
 		setupLog.Error(err, "unable to create metrics watcher")
 		os.Exit(1)
 	}
+
+	if cfg.MetricInformerConfig != nil {
+		if cfg.MetricInformerConfig.Type == config.MetricInformerTypePrometheus {
+			restConfig := &rest.Config{
+				Host: cfg.MetricInformerConfig.Prometheus.Address,
+			}
+			metricInformer, err = metric.NewMetricInformer(ctx, restConfig, metric.PrometheusMetricInformerType)
+			if err != nil {
+				setupLog.Error(err, "unable to create prometheus metrics watcher")
+				os.Exit(1)
+			}
+
+		}
+	}
+
 	metricChan := metricInformer.Start(ctx)
 
-	healthInformer, err := health.NewHealthInformer(ctx, config, health.K8SHealthInformerType)
+	healthInformer, err := health.NewHealthInformer(ctx, kubeConfig, health.K8SHealthInformerType)
 	if err != nil {
 		setupLog.Error(err, "unable to create health watcher")
 		os.Exit(1)
 	}
 	healthChan := healthInformer.Start(ctx)
 
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
 		setupLog.Error(err, "unable to create clientset")
 		os.Exit(1)

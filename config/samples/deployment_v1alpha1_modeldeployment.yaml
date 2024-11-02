@@ -12,23 +12,23 @@ spec:
   modelSourceRef:
     apiVersion: apps/v1 # mandatory
     kind: Deployment # mandatory
-    name: php-apache # mandatory
+    name: whisper-app # mandatory
     namespace: beamlit # remove
   serviceRef:
-    name: php-apache
+    name: whisper-app
     namespace: beamlit
-    targetPort: 80
-  policies:
-    - name: policy-sample
-      namespace: beamlit
-      refType: localPolicy
+    targetPort: 5000
   offloadingConfig:
     behavior:
       percentage: 50
     metrics:
-      - type: Resource
-        resource:
-          name: cpu
+      - type: External
+        external:
+          metric:
+            name: transcription_duration_seconds_sum
+            selector:
+              matchLabels:
+                job: "whisper-app"
           target:
-            type: Utilization
-            averageUtilization: 5
+            type: Value
+            value: "2"
