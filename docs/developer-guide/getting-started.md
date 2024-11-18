@@ -15,7 +15,7 @@ In this guide, we'll go over the development process for the Beamlit Operator.
 1. Clone the repository:
 
 ```
-git clone https://github.com/beamlit/operator.git
+git clone https://github.com/beamlit/beamlit-controller.git
 ```
 
 2. Build the operator binary:

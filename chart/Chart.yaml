@@ -1,6 +1,6 @@
 apiVersion: v2
-name: beamlit
-description: A Helm chart for Kubernetes
+name: beamlit-controller
+description: A Helm chart to deploy beamlit controller on your Kubernetes cluster
 # A chart can be either an 'application' or a 'library' chart.
 #
 # Application charts are a collection of templates that can be packaged into versioned archives
@@ -25,3 +25,6 @@ dependencies:
     version: 3.12.1
     repository: https://kubernetes-sigs.github.io/metrics-server/
     condition: fullInstall
+  - name: gateway
+    version: 0.1.0
+    repository: file://../gateway/chart

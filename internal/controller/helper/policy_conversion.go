@@ -1,7 +1,7 @@
 package helper
 
 import (
-	authorizationv1alpha1 "github.com/beamlit/operator/api/v1alpha1/authorization"
+	authorizationv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/authorization"
 	beamlit "github.com/tmp-moon/toolkit/sdk"
 )
 

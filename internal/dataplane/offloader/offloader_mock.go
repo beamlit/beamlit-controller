@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	deployment "github.com/beamlit/operator/api/v1alpha1/deployment"
+	deployment "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
 	gomock "go.uber.org/mock/gomock"
 )
 

@@ -8,7 +8,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	beamlitdeploymentv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
+	beamlitdeploymentv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
 )
 
 type RemoteDeploymentPlatformType string

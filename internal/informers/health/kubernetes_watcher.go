@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/beamlit/operator/internal/informers"
+	"github.com/beamlit/beamlit-controller/internal/informers"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	kubeinformers "k8s.io/client-go/informers"

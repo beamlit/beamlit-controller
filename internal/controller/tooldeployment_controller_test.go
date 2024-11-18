@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	beamlitcomv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
+	beamlitcomv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
 )
 
 var _ = Describe("ToolDeployment Controller", func() {

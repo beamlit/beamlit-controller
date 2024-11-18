@@ -31,13 +31,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	v1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
-	"github.com/beamlit/operator/internal/beamlit"
-	"github.com/beamlit/operator/internal/controller/helper"
-	"github.com/beamlit/operator/internal/dataplane/configurer"
-	"github.com/beamlit/operator/internal/dataplane/offloader"
-	"github.com/beamlit/operator/internal/informers/health"
-	"github.com/beamlit/operator/internal/informers/metric"
+	v1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
+	"github.com/beamlit/beamlit-controller/internal/beamlit"
+	"github.com/beamlit/beamlit-controller/internal/controller/helper"
+	"github.com/beamlit/beamlit-controller/internal/dataplane/configurer"
+	"github.com/beamlit/beamlit-controller/internal/dataplane/offloader"
+	"github.com/beamlit/beamlit-controller/internal/informers/health"
+	"github.com/beamlit/beamlit-controller/internal/informers/metric"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

@@ -42,18 +42,18 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	beamlitclientset "github.com/tmp-moon/beamlit-proxy/clientset"
+	beamlitclientset "github.com/beamlit/beamlit-controller/gateway/clientset"
 	corev1 "k8s.io/api/core/v1"
 
-	beamlitauthorizationv1alpha1 "github.com/beamlit/operator/api/v1alpha1/authorization"
-	beamlitdeploymentv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
-	"github.com/beamlit/operator/internal/beamlit"
-	"github.com/beamlit/operator/internal/config"
-	"github.com/beamlit/operator/internal/controller"
-	"github.com/beamlit/operator/internal/dataplane/configurer"
-	"github.com/beamlit/operator/internal/dataplane/offloader"
-	"github.com/beamlit/operator/internal/informers/health"
-	"github.com/beamlit/operator/internal/informers/metric"
+	beamlitauthorizationv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/authorization"
+	beamlitdeploymentv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
+	"github.com/beamlit/beamlit-controller/internal/beamlit"
+	"github.com/beamlit/beamlit-controller/internal/config"
+	"github.com/beamlit/beamlit-controller/internal/controller"
+	"github.com/beamlit/beamlit-controller/internal/dataplane/configurer"
+	"github.com/beamlit/beamlit-controller/internal/dataplane/offloader"
+	"github.com/beamlit/beamlit-controller/internal/informers/health"
+	"github.com/beamlit/beamlit-controller/internal/informers/metric"
 	//+kubebuilder:scaffold:imports
 )
 

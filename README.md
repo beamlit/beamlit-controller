@@ -1,6 +1,10 @@
-# Beamlit Operator
+# Beamlit Controller
 
-Beamlit Operator is a Kubernetes operator for Beamlit. It allows you to manage your Beamlit model deployments directly on Kubernetes.
+<p align="center">
+  <img src="./docs/assets/beamlit-logo.png" alt="Beamlit Controller" width="200" />
+</p>
+
+Beamlit Operator is a Kubernetes controller for Beamlit. It allows you to manage your Beamlit model deployments directly on Kubernetes.
 One key benefit is that it allows you to offload your model deployments to Beamlit or any other Kubernetes cluster.
 
 ## Table of Contents
@@ -12,7 +16,7 @@ One key benefit is that it allows you to offload your model deployments to Beaml
 
 ## Installation
 
-At the moment, the operator only supports Gateway API.
+At the moment, the controller only supports Gateway API.
 
 ### Prerequisites
 
@@ -21,13 +25,13 @@ At the moment, the operator only supports Gateway API.
 
 ### Full Installation
 
-> Use this if you want to have a full installation of the operator on your cluster with all the dependencies needed to offload your model.
+> Use this if you want to have a full installation of the controller on your cluster with all the dependencies needed to offload your model.
 
 ```sh
-git clone https://github.com/beamlit/operator.git
-cd operator/chart
+git clone https://github.com/beamlit/controller.git
+cd controller/chart
 helm dependency update
-helm install beamlit-operator . -n beamlit --create-namespace --full-install --
+helm install beamlit-controller . -n beamlit --create-namespace --full-install --
 ```
 
 ## Usage
@@ -35,7 +39,7 @@ helm install beamlit-operator . -n beamlit --create-namespace --full-install --
 ### Prerequisites
 
 - Beamlit API key
-- Kubernetes cluster with the operator installed
+- Kubernetes cluster with the controller installed
 - A deployed model on your Kubernetes cluster
 
 ### Deploy a model
@@ -46,7 +50,7 @@ apiVersion: model.beamlit.com/v1alpha1
 kind: ModelDeployment
 metadata:
   labels:
-    app.kubernetes.io/name: operator
+    app.kubernetes.io/name: controller
     app.kubernetes.io/managed-by: kustomize
   name: modeldeployment-sample
 spec:
@@ -72,7 +76,7 @@ apiVersion: model.beamlit.com/v1alpha1
 kind: ModelDeployment
 metadata:
   labels:
-    app.kubernetes.io/name: operator
+    app.kubernetes.io/name: controller
     app.kubernetes.io/managed-by: kustomize
   name: modeldeployment-sample
 spec:
@@ -107,8 +111,8 @@ EOF
 
 ## Support
 
-Please [open an issue](https://github.com/beamlit/operator/issues/new) for support.
+Please [open an issue](https://github.com/beamlit/controller/issues/new) for support.
 
 ## Contributing
 
-Please contribute using [Github Flow](https://guides.github.com/introduction/flow/). Create a branch, add commits, and [open a pull request](https://github.com/beamlit/operator/compare/).
+Please contribute using [Github Flow](https://guides.github.com/introduction/flow/). Create a branch, add commits, and [open a pull request](https://github.com/beamlit/controller/compare/).

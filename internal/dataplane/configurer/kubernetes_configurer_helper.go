@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
+	modelv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"

@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/beamlit/operator/test/utils"
+	"github.com/beamlit/beamlit-controller/test/utils"
 )
 
 const namespace = "operator-system"

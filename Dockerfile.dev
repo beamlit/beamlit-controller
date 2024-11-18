@@ -1,9 +1,0 @@
-# Build the manager binary
-FROM golang:1.22
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-WORKDIR /
-COPY ./dev/manager .
-USER 65532:65532
-
-ENTRYPOINT ["/manager"]

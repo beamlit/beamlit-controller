@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
+	modelv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
 )
 
 // Convert converts a ModelDeployment to a Beamlit ModelDeployment

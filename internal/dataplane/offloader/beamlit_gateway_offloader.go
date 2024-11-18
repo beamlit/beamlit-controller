@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	modelv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
-	proxyv1alpha1 "github.com/tmp-moon/beamlit-proxy/api/v1alpha1"
-	beamlitclientset "github.com/tmp-moon/beamlit-proxy/clientset"
+	modelv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
+	proxyv1alpha1 "github.com/beamlit/beamlit-controller/gateway/api/v1alpha1"
+	beamlitclientset "github.com/beamlit/beamlit-controller/gateway/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )

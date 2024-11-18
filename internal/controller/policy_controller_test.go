@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	authorizationv1alpha1 "github.com/beamlit/operator/api/v1alpha1/authorization"
+	authorizationv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/authorization"
 )
 
 var _ = Describe("Policy Controller", func() {

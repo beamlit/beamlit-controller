@@ -9,8 +9,8 @@ multigroup: true
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
-projectName: operator
-repo: github.com/beamlit/operator
+projectName: beamlit-controller
+repo: github.com/beamlit/beanlit-controller
 resources:
   - api:
       crdVersion: v1
@@ -19,7 +19,7 @@ resources:
     domain: beamlit.com
     group: deployment
     kind: ModelDeployment
-    path: github.com/beamlit/operator/api/v1alpha1/deployment
+    path: github.com/beamlit/beamlit-controller/api/v1alpha1/deployment
     version: v1alpha1
   - api:
       crdVersion: v1
@@ -28,7 +28,7 @@ resources:
     domain: beamlit.com
     group: deployment
     kind: Policy
-    path: github.com/beamlit/operator/api/v1alpha1/authorization
+    path: github.com/beamlit/beamlit-controller/api/v1alpha1/authorization
     version: v1alpha1
   - api:
       crdVersion: v1
@@ -37,6 +37,6 @@ resources:
     domain: beamlit.com
     group: authorization
     kind: ToolDeployment
-    path: github.com/beamlit/operator/api/v1alpha1/deployment
+    path: github.com/beamlit/beamlit-controller/api/v1alpha1/deployment
     version: v1alpha1
 version: "3"

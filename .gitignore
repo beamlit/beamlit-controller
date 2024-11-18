@@ -30,3 +30,6 @@ go.work
 # Helm
 *.lock
 *.tgz
+
+# dev dependencies
+*.dev

@@ -19,7 +19,7 @@ package health
 import (
 	"context"
 
-	"github.com/beamlit/operator/internal/informers"
+	"github.com/beamlit/beamlit-controller/internal/informers"
 	v1 "k8s.io/api/core/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"

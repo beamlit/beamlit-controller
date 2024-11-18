@@ -28,9 +28,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	authorizationv1alpha1 "github.com/beamlit/operator/api/v1alpha1/authorization"
-	"github.com/beamlit/operator/internal/beamlit"
-	"github.com/beamlit/operator/internal/controller/helper"
+	authorizationv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/authorization"
+	"github.com/beamlit/beamlit-controller/internal/beamlit"
+	"github.com/beamlit/beamlit-controller/internal/controller/helper"
 )
 
 // PolicyReconciler reconciles a Policy object

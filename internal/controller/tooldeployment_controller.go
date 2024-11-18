@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	beamlitcomv1alpha1 "github.com/beamlit/operator/api/v1alpha1/deployment"
+	beamlitcomv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
 )
 
 // ToolDeploymentReconciler reconciles a ToolDeployment object
