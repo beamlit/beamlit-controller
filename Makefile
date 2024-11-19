@@ -344,7 +344,7 @@ helm: manifests kustomize helmify
 
 .PHONY: helm-docs
 helm-docs: $(HELMD_DOCS) ## Generate Helm chart README.md.
-	$(HELMD_DOCS) -c config/helm
+	$(HELMD_DOCS)
 
 .PHONY: crd-ref-docs
 crd-ref-docs: $(CRD_REF_DOCS) ## Generate CRD reference documentation.

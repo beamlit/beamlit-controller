@@ -24,7 +24,8 @@ dependencies:
   - name: metrics-server
     version: 3.12.1
     repository: https://kubernetes-sigs.github.io/metrics-server/
-    condition: fullInstall
+    condition: installMetricsServer
   - name: beamlit-gateway-chart
     version: 0.1.0
     repository: file://../gateway/chart
+    condition: installBeamlitGateway
