@@ -57,7 +57,7 @@ func (h *k8sHealthWatcher) start(ctx context.Context) {
 		return
 	}
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			h.handleEvent(ctx, obj)
 		},
@@ -67,7 +67,13 @@ func (h *k8sHealthWatcher) start(ctx context.Context) {
 		DeleteFunc: func(obj interface{}) {
 			h.handleEvent(ctx, obj)
 		},
-	})
+	}); err != nil {
+		h.errChan <- informers.ErrWrapper{
+			ModelName: h.model,
+			Err:       fmt.Errorf("failed to add event handler: %w", err),
+		}
+		return
+	}
 
 	h.informerFactory.Start(ctx.Done())
 
@@ -81,7 +87,7 @@ func (h *k8sHealthWatcher) start(ctx context.Context) {
 	<-ctx.Done()
 }
 
-func (h *k8sHealthWatcher) handleEvent(ctx context.Context, obj interface{}) {
+func (h *k8sHealthWatcher) handleEvent(_ context.Context, obj interface{}) {
 	switch h.watchTarget.Kind {
 	case "Deployment":
 		deployment, ok := obj.(*appsv1.Deployment)

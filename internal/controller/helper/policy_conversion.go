@@ -25,8 +25,8 @@ func toBeamlitFlavors(flavors []authorizationv1alpha1.PolicyFlavor) *[]beamlit.F
 	beamlitFlavors := make([]beamlit.Flavor, len(flavors))
 	for i, flavor := range flavors {
 		beamlitFlavors[i] = beamlit.Flavor{
-			Name: &flavor.Name,
-			Type: &flavor.Type,
+			Name: &flavor.Name, //nolint:exportloopref
+			Type: &flavor.Type, //nolint:exportloopref
 		}
 	}
 	return &beamlitFlavors
@@ -37,7 +37,7 @@ func toBeamlitLocations(locations []authorizationv1alpha1.PolicyLocation) *[]bea
 	for i, location := range locations {
 		typeStr := string(location.Type)
 		beamlitLocations[i] = beamlit.PolicyLocation{
-			Name: &location.Name,
+			Name: &location.Name, //nolint:exportloopref
 			Type: &typeStr,
 		}
 	}

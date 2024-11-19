@@ -1,3 +1,4 @@
+//nolint:errcheck
 package clientset
 
 import (
@@ -22,7 +23,12 @@ type V1Alpha1Client interface {
 }
 
 func (c *ClientSet) GetRoute(ctx context.Context, name string) (*v1alpha1.Route, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/%s/%s", c.apiAddr, v1Alpha1RoutePath, name), nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		fmt.Sprintf("http://%s/%s/%s", c.apiAddr, v1Alpha1RoutePath, name),
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +50,12 @@ func (c *ClientSet) RegisterRoute(ctx context.Context, route v1alpha1.Route) (*v
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("http://%s/%s", c.apiAddr, v1Alpha1RoutePath), bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		fmt.Sprintf("http://%s/%s", c.apiAddr, v1Alpha1RoutePath),
+		bytes.NewBuffer(body),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +73,12 @@ func (c *ClientSet) RegisterRoute(ctx context.Context, route v1alpha1.Route) (*v
 }
 
 func (c *ClientSet) DeleteRoute(ctx context.Context, name string) (*v1alpha1.Route, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("http://%s/%s/%s", c.apiAddr, v1Alpha1RoutePath, name), nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodDelete,
+		fmt.Sprintf("http://%s/%s/%s", c.apiAddr, v1Alpha1RoutePath, name),
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +100,12 @@ func (c *ClientSet) UpdateRoute(ctx context.Context, route v1alpha1.Route) (*v1a
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("http://%s/%s/%s", c.apiAddr, v1Alpha1RoutePath, route.Name), bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPut,
+		fmt.Sprintf("http://%s/%s/%s", c.apiAddr, v1Alpha1RoutePath, route.Name),
+		bytes.NewBuffer(body),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -10,11 +10,11 @@ import (
 )
 
 type weightedBackend struct {
-	backend *v1alpha1.Backend
+	backend v1alpha1.Backend
 	weight  int
 }
 
-func weightedRandomBackend(ctx context.Context, backends []weightedBackend, totalWeight int) *v1alpha1.Backend {
+func weightedRandomBackend(_ context.Context, backends []weightedBackend, totalWeight int) v1alpha1.Backend {
 	randomIndex := rand.Intn(totalWeight)
 	lastWeight := 0
 	for _, weightedBackend := range backends {
@@ -23,7 +23,7 @@ func weightedRandomBackend(ctx context.Context, backends []weightedBackend, tota
 			return weightedBackend.backend
 		}
 	}
-	return nil
+	return backends[len(backends)-1].backend
 }
 
 func handleOAuth(ctx context.Context, auth *v1alpha1.Auth) (*oauth2.Token, error) {

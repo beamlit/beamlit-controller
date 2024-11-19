@@ -23,7 +23,11 @@ func (c *Client) CreateOrUpdateModelDeployment(ctx context.Context, modelDeploym
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.FromContext(ctx).Error(err, "failed to close response body")
+		}
+	}()
 	if resp.StatusCode >= 299 {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to update ModelDeployment, status code: %d, body: %s", resp.StatusCode, string(body))
@@ -45,7 +49,11 @@ func (c *Client) DeleteModelDeployment(ctx context.Context, model string, enviro
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.Error(err, "failed to close response body")
+		}
+	}()
 	logger.V(1).Info("ModelDeployment deleted", "Status", resp.StatusCode)
 	if resp.StatusCode == http.StatusNotFound {
 		return nil
@@ -62,7 +70,11 @@ func (c *Client) NotifyOnModelOffloading(ctx context.Context, model string, envi
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.FromContext(ctx).Error(err, "failed to close response body")
+		}
+	}()
 	if resp.StatusCode >= 299 {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to get ModelDeployment, status code: %d, body: %s", resp.StatusCode, string(body))

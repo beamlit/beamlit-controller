@@ -1,7 +1,7 @@
 # Beamlit Controller
 
 <p align="center">
-  <img src="./docs/assets/beamlit-logo.png" alt="Beamlit Controller" width="200" />
+  <img src="./docs/assets/beamlit-logo.png" alt="Beamlit Controller"/>
 </p>
 
 Beamlit Operator is a Kubernetes controller for Beamlit. It allows you to manage your Beamlit model deployments directly on Kubernetes.

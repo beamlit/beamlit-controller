@@ -37,7 +37,7 @@ func (p *ProxyV1Alpha1) RewriteV1Alpha1(r *httputil.ProxyRequest) {
 		slog.Info("backend", "backend", backend)
 		totalWeight += backend.Weight
 		weightedBackends = append(weightedBackends, weightedBackend{
-			backend: &backend,
+			backend: backend,
 			weight:  backend.Weight,
 		})
 	}
@@ -45,11 +45,13 @@ func (p *ProxyV1Alpha1) RewriteV1Alpha1(r *httputil.ProxyRequest) {
 		return
 	}
 	randomBackend := weightedRandomBackend(r.In.Context(), weightedBackends, totalWeight)
-	handleBackend(r.Out, randomBackend)
+	if err := handleBackend(r.Out, randomBackend); err != nil {
+		slog.Error("error handling the backend", "error", err)
+	}
 	r.SetXForwarded()
 }
 
-func handleBackend(r *http.Request, backend *v1alpha1.Backend) error {
+func handleBackend(r *http.Request, backend v1alpha1.Backend) error {
 	if backend.Auth != nil {
 		switch backend.Auth.Type {
 		case v1alpha1.AuthTypeOAuth:
@@ -78,7 +80,9 @@ func (p *ProxyV1Alpha1) ErrorHandler(w http.ResponseWriter, r *http.Request, err
 	routeName, ok := p.backendHostToRoute.Load(r.Host)
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("not found"))
+		if _, err := w.Write([]byte("not found")); err != nil {
+			slog.Error("Error writing the response", "error", err)
+		}
 		return
 	}
 	for i := 0; i < 4; i++ {
@@ -89,7 +93,9 @@ func (p *ProxyV1Alpha1) ErrorHandler(w http.ResponseWriter, r *http.Request, err
 		time.Sleep(time.Duration(10^i) * time.Millisecond)
 	}
 	w.WriteHeader(http.StatusServiceUnavailable)
-	w.Write([]byte("service unavailable"))
+	if _, err := w.Write([]byte("service unavailable")); err != nil {
+		slog.Error("Error writing the response", "error", err)
+	}
 }
 
 func (p *ProxyV1Alpha1) errorHandler(w http.ResponseWriter, r *http.Request, routeName string) error {
@@ -108,7 +114,7 @@ func (p *ProxyV1Alpha1) errorHandler(w http.ResponseWriter, r *http.Request, rou
 		}
 		totalWeight += backend.Weight
 		weightedBackends = append(weightedBackends, weightedBackend{
-			backend: &backend,
+			backend: backend,
 			weight:  backend.Weight,
 		})
 		r.URL.Path = removePathPrefix(r.URL.Path, backend.PathPrefix)
@@ -117,7 +123,9 @@ func (p *ProxyV1Alpha1) errorHandler(w http.ResponseWriter, r *http.Request, rou
 		return fmt.Errorf("no backends")
 	}
 	randomBackend := weightedRandomBackend(r.Context(), weightedBackends, totalWeight)
-	handleBackend(r, randomBackend)
+	if err := handleBackend(r, randomBackend); err != nil {
+		return err
+	}
 	req, err := http.NewRequest(r.Method, r.URL.String(), r.Body)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
@@ -131,7 +139,11 @@ func (p *ProxyV1Alpha1) errorHandler(w http.ResponseWriter, r *http.Request, rou
 	if err != nil {
 		return fmt.Errorf("error contacting backend: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Error("error closing response body", "error", err)
+		}
+	}()
 
 	// Copy headers
 	for k, v := range resp.Header {
@@ -174,7 +186,7 @@ func (p *ProxyV1Alpha1) ModifyResponse(r *http.Response) error {
 		}
 		totalWeight += backend.Weight
 		weightedBackends = append(weightedBackends, weightedBackend{
-			backend: &backend,
+			backend: backend,
 			weight:  backend.Weight,
 		})
 		r.Request.URL.Path = removePathPrefix(r.Request.URL.Path, backend.PathPrefix)
@@ -184,7 +196,9 @@ func (p *ProxyV1Alpha1) ModifyResponse(r *http.Response) error {
 		return nil
 	}
 	randomBackend := weightedRandomBackend(context.TODO(), weightedBackends, totalWeight)
-	handleBackend(r.Request, randomBackend)
+	if err := handleBackend(r.Request, randomBackend); err != nil {
+		return err
+	}
 	req, err := http.NewRequest(r.Request.Method, r.Request.URL.String(), r.Request.Body)
 	if err != nil {
 		return err
@@ -194,7 +208,11 @@ func (p *ProxyV1Alpha1) ModifyResponse(r *http.Response) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Error("error closing response body", "error", err)
+		}
+	}()
 
 	// Copy headers and status
 	for k, v := range resp.Header {

@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	beamlit "github.com/tmp-moon/toolkit/sdk"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 func (c *Client) CreateOrUpdatePolicy(ctx context.Context, policy beamlit.Policy) (*beamlit.Policy, error) {
@@ -18,7 +19,11 @@ func (c *Client) CreateOrUpdatePolicy(ctx context.Context, policy beamlit.Policy
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.FromContext(ctx).Error(err, "failed to close response body")
+		}
+	}()
 	if resp.StatusCode >= 299 {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to update Policy, status code: %d, body: %s", resp.StatusCode, string(body))
@@ -35,7 +40,11 @@ func (c *Client) DeletePolicy(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.FromContext(ctx).Error(err, "failed to close response body")
+		}
+	}()
 	if resp.StatusCode == http.StatusNotFound {
 		return nil
 	}

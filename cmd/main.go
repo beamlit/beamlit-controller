@@ -32,6 +32,17 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 
+	beamlitauthorizationv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/authorization"
+	beamlitdeploymentv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
+	beamlitclientset "github.com/beamlit/beamlit-controller/gateway/clientset"
+	"github.com/beamlit/beamlit-controller/internal/beamlit"
+	"github.com/beamlit/beamlit-controller/internal/config"
+	"github.com/beamlit/beamlit-controller/internal/controller"
+	"github.com/beamlit/beamlit-controller/internal/dataplane/configurer"
+	"github.com/beamlit/beamlit-controller/internal/dataplane/offloader"
+	"github.com/beamlit/beamlit-controller/internal/informers/health"
+	"github.com/beamlit/beamlit-controller/internal/informers/metric"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -41,19 +52,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	beamlitclientset "github.com/beamlit/beamlit-controller/gateway/clientset"
-	corev1 "k8s.io/api/core/v1"
-
-	beamlitauthorizationv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/authorization"
-	beamlitdeploymentv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/deployment"
-	"github.com/beamlit/beamlit-controller/internal/beamlit"
-	"github.com/beamlit/beamlit-controller/internal/config"
-	"github.com/beamlit/beamlit-controller/internal/controller"
-	"github.com/beamlit/beamlit-controller/internal/dataplane/configurer"
-	"github.com/beamlit/beamlit-controller/internal/dataplane/offloader"
-	"github.com/beamlit/beamlit-controller/internal/informers/health"
-	"github.com/beamlit/beamlit-controller/internal/informers/metric"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -70,6 +68,7 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+//nolint:gocyclo
 func main() {
 	var cfgPath string
 	flag.StringVar(&cfgPath, "config", "", "Path to the config file")
@@ -89,8 +88,16 @@ func main() {
 		setupLog.Error(err, "unable to open config file")
 		os.Exit(1)
 	}
-	defer cfgFile.Close()
-	cfg.FromFile(cfgPath, cfgFile)
+	defer func() {
+		if err := cfgFile.Close(); err != nil {
+			setupLog.Error(err, "unable to close config file")
+			os.Exit(1)
+		}
+	}()
+	if err := cfg.FromFile(cfgPath, cfgFile); err != nil {
+		setupLog.Error(err, "unable to load config file")
+		os.Exit(1)
+	}
 	if err := cfg.Validate(); err != nil {
 		setupLog.Error(err, "invalid config")
 		os.Exit(1)
@@ -202,15 +209,32 @@ func main() {
 		os.Exit(1)
 	}
 
-	go configurer.Start(ctx, &beamlitdeploymentv1alpha1.ServiceReference{
-		ObjectReference: corev1.ObjectReference{
-			Namespace: *cfg.ProxyService.Namespace,
-			Name:      *cfg.ProxyService.Name,
-		},
-		TargetPort: int32(*cfg.ProxyService.Port),
-	})
+	go func() {
+		if err := configurer.Start(ctx, &beamlitdeploymentv1alpha1.ServiceReference{
+			ObjectReference: corev1.ObjectReference{
+				Namespace: *cfg.ProxyService.Namespace,
+				Name:      *cfg.ProxyService.Name,
+			},
+			TargetPort: int32(*cfg.ProxyService.Port),
+		}); err != nil {
+			setupLog.Error(err, "unable to start configurer")
+		}
+	}()
 
-	offloader, err := offloader.NewOffloader(ctx, offloader.BeamlitGatewayOffloaderType, clientset, beamlitclientset.NewClientSet(http.DefaultClient, fmt.Sprintf("%s.%s.svc.cluster.local:%d", *cfg.ProxyService.Name, *cfg.ProxyService.Namespace, *cfg.ProxyService.AdminPort)))
+	offloader, err := offloader.NewOffloader(
+		ctx,
+		offloader.BeamlitGatewayOffloaderType,
+		clientset,
+		beamlitclientset.NewClientSet(
+			http.DefaultClient,
+			fmt.Sprintf(
+				"%s.%s.svc.cluster.local:%d",
+				*cfg.ProxyService.Name,
+				*cfg.ProxyService.Namespace,
+				*cfg.ProxyService.AdminPort,
+			),
+		),
+	)
 	if err != nil {
 		setupLog.Error(err, "unable to create offloader")
 		os.Exit(1)
@@ -284,8 +308,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	go ctrl.WatchForInformerUpdates(ctx)
-	go ctrl.PolicyUpdate(ctx)
+	go func() {
+		if err := ctrl.WatchForInformerUpdates(ctx); err != nil {
+			setupLog.Error(err, "unable to watch for informer updates")
+		}
+	}()
+
+	go func() {
+		if err := ctrl.PolicyUpdate(ctx); err != nil {
+			setupLog.Error(err, "unable to update policies")
+		}
+	}()
 
 	go setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {

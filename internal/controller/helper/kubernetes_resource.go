@@ -21,19 +21,10 @@ import (
 	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-func retrieveHPA(ctx context.Context, kubernetesClient client.Client, hpaName, namespace string) (autoscalingv2.HorizontalPodAutoscalerSpec, error) {
-	hpa := autoscalingv2.HorizontalPodAutoscaler{}
-	if err := kubernetesClient.Get(ctx, types.NamespacedName{Name: hpaName, Namespace: namespace}, &hpa); err != nil {
-		return autoscalingv2.HorizontalPodAutoscalerSpec{}, err
-	}
-	return hpa.Spec, nil
-}
 
 // retrievePodTemplate retrieves a pod template from a Kubernetes resource
 // It fails if the resource is not a Deployment, StatefulSet, DaemonSet, ReplicaSet

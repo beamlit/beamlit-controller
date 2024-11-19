@@ -478,15 +478,6 @@ func (r *ModelDeploymentReconciler) notifyOnBeamlit(ctx context.Context, model *
 	return r.BeamlitClient.NotifyOnModelOffloading(ctx, model.Spec.Model, model.Spec.Environment, offloading)
 }
 
-func remove(slice []types.NamespacedName, item types.NamespacedName) []types.NamespacedName {
-	for i, v := range slice {
-		if v == item {
-			return append(slice[:i], slice[i+1:]...)
-		}
-	}
-	return slice
-}
-
 func (r *ModelDeploymentReconciler) PolicyUpdate(ctx context.Context) error {
 	return nil
 	/*
@@ -541,6 +532,7 @@ func (r *ModelDeploymentReconciler) PolicyUpdate(ctx context.Context) error {
 	*/
 }
 
+/*
 func removePolicy(policies []v1alpha1.PolicyRef, policyName string) []v1alpha1.PolicyRef {
 	for i, policy := range policies {
 		if policy.Name == policyName {
@@ -549,3 +541,4 @@ func removePolicy(policies []v1alpha1.PolicyRef, policyName string) []v1alpha1.P
 	}
 	return policies
 }
+*/

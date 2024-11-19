@@ -41,6 +41,10 @@ type kubernetesConfigurer struct {
 	stopChans                      map[types.NamespacedName][]chan bool
 }
 
+const (
+	OperatorLabel = "beamlit-operator"
+)
+
 func newKubernetesConfigurer(ctx context.Context, kubeClient kubernetes.Interface) (Configurer, error) {
 	return &kubernetesConfigurer{
 		kubeClient:                     kubeClient,
@@ -112,7 +116,11 @@ func (s *kubernetesConfigurer) Configure(ctx context.Context, serviceRef *modelv
 
 	stopCh := make(chan bool)
 	s.stopChans[types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name}] = append(s.stopChans[types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name}], stopCh)
-	go s.watchService(ctx, serviceRef, stopCh)
+	go func() {
+		if err := s.watchService(ctx, serviceRef, stopCh); err != nil {
+			log.Log.Error(err, "error watching service")
+		}
+	}()
 
 	return nil
 }
@@ -140,7 +148,7 @@ func (s *kubernetesConfigurer) createBeamlitModelService(ctx context.Context, se
 			WithType(corev1.ServiceTypeClusterIP))
 
 	beamlitService, err := s.kubeClient.CoreV1().Services(serviceRef.Namespace).Apply(ctx, beamlitServiceApplyConfig, metav1.ApplyOptions{
-		FieldManager: "beamlit-operator",
+		FieldManager: OperatorLabel,
 	})
 	if err != nil {
 		return nil, err
@@ -197,7 +205,7 @@ func (s *kubernetesConfigurer) addPortToGatewayService(ctx context.Context, serv
 	}
 	gatewayService.Spec.ExternalIPs = externalIPs
 	_, err = s.kubeClient.CoreV1().Services(s.gatewayServiceRef.Namespace).Update(ctx, gatewayService, metav1.UpdateOptions{
-		FieldManager: "beamlit-operator",
+		FieldManager: OperatorLabel,
 	})
 	if err != nil {
 		return err
@@ -219,11 +227,11 @@ func (s *kubernetesConfigurer) takeOverEndpointsSlices(ctx context.Context, serv
 		s.initialEndpointPerLocalService[types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name}] = make([]*types.NamespacedName, 0)
 	}
 	for _, endpoint := range userServiceEndpoints.Items {
-		if endpoint.Labels["endpointslice.kubernetes.io/managed-by"] == "beamlit-operator" {
+		if endpoint.Labels["endpointslice.kubernetes.io/managed-by"] == OperatorLabel {
 			continue
 		}
 		s.initialEndpointPerLocalService[types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name}] = append(s.initialEndpointPerLocalService[types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name}], &types.NamespacedName{Namespace: endpoint.Namespace, Name: endpoint.Name})
-		endpoint.Labels["endpointslice.kubernetes.io/managed-by"] = "beamlit-operator"
+		endpoint.Labels["endpointslice.kubernetes.io/managed-by"] = OperatorLabel
 		endpoint.Labels["kubernetes.io/service-name"] = serviceRef.Name
 		_, err = s.kubeClient.DiscoveryV1().EndpointSlices(serviceRef.Namespace).Update(ctx, &endpoint, metav1.UpdateOptions{})
 		if err != nil {
@@ -258,7 +266,7 @@ func (s *kubernetesConfigurer) createMirroredEndpointsSlice(ctx context.Context,
 			"endpointslice.kubernetes.io/managed-by": "beamlit-operator",
 		})
 
-	var endpoints []*discoveryv1apply.EndpointApplyConfiguration
+	endpoints := make([]*discoveryv1apply.EndpointApplyConfiguration, 0)
 	for _, endpoint := range mirroredEndpointsSlice.Items[0].Endpoints {
 		endpointApply := discoveryv1apply.Endpoint().
 			WithAddresses(endpoint.Addresses...).
@@ -277,7 +285,7 @@ func (s *kubernetesConfigurer) createMirroredEndpointsSlice(ctx context.Context,
 	}
 	esApplyConfig.WithEndpoints(endpoints...)
 
-	var ports []*discoveryv1apply.EndpointPortApplyConfiguration
+	ports := make([]*discoveryv1apply.EndpointPortApplyConfiguration, 0)
 	for _, port := range mirroredEndpointsSlice.Items[0].Ports {
 		if port.Port != nil && *port.Port == targetPort {
 			continue
@@ -306,7 +314,11 @@ func (s *kubernetesConfigurer) createMirroredEndpointsSlice(ctx context.Context,
 
 	stopCh := make(chan bool)
 	s.stopChans[types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name}] = append(s.stopChans[types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name}], stopCh)
-	go s.mirrorEndpointSlices(ctx, serviceRef, targetPort, stopCh)
+	go func() {
+		if err := s.mirrorEndpointSlices(ctx, serviceRef, targetPort, stopCh); err != nil {
+			log.FromContext(ctx).Error(err, "error while mirroring endpoints slices")
+		}
+	}()
 	return nil
 }
 
@@ -382,7 +394,7 @@ func (s *kubernetesConfigurer) deleteBeamlitService(ctx context.Context, service
 	return s.kubeClient.CoreV1().Services(beamlitService.Namespace).Delete(ctx, beamlitService.Name, metav1.DeleteOptions{})
 }
 
-func (s *kubernetesConfigurer) stopWatchers(ctx context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
+func (s *kubernetesConfigurer) stopWatchers(_ context.Context, serviceRef *modelv1alpha1.ServiceReference) error {
 	stopCh, ok := s.stopChans[types.NamespacedName{Namespace: serviceRef.Namespace, Name: serviceRef.Name}]
 	if !ok {
 		return fmt.Errorf("stop channel not found for service %s", serviceRef.Name)

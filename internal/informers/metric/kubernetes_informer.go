@@ -204,6 +204,7 @@ func (mw *k8sMetricWatcher) start(ctx context.Context) {
 	}
 }
 
+//nolint:gocyclo
 func (mw *k8sMetricWatcher) CheckMetric(ctx context.Context) (bool, error) {
 	errs := []error{}
 	for _, metric := range mw.metrics {
@@ -263,7 +264,7 @@ func (mw *k8sMetricWatcher) CheckMetric(ctx context.Context) (bool, error) {
 			}
 			metrics := []int64{}
 			for _, podMetric := range usage {
-				metrics = append(metrics, int64(podMetric.Value))
+				metrics = append(metrics, podMetric.Value)
 			}
 			reached, err := isMetricReached(
 				replicas,
@@ -280,14 +281,14 @@ func (mw *k8sMetricWatcher) CheckMetric(ctx context.Context) (bool, error) {
 				errs = append(errs, fmt.Errorf("metric %s is not valid", metric.Resource.Name))
 				continue
 			}
-			usage, _, err := mw.metricsClient.GetResourceMetric(ctx, v1.ResourceName(metric.Resource.Name), mw.watchTarget.Namespace, labelSelector, "")
+			usage, _, err := mw.metricsClient.GetResourceMetric(ctx, metric.Resource.Name, mw.watchTarget.Namespace, labelSelector, "")
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 			reached := false
 			if metric.Resource.Target.AverageUtilization != nil {
-				requestedResource, err := findRequestedResource(ctx, mw.kubernetesClient, mw.watchTarget.Namespace, labelSelector, v1.ResourceName(metric.Resource.Name))
+				requestedResource, err := findRequestedResource(ctx, mw.kubernetesClient, mw.watchTarget.Namespace, labelSelector, metric.Resource.Name)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -305,7 +306,7 @@ func (mw *k8sMetricWatcher) CheckMetric(ctx context.Context) (bool, error) {
 				metrics := []int64{}
 				for _, podMetric := range usage {
 					if podMetric.Timestamp.Add(podMetric.Window).After(time.Now().Add(-mw.scrapeInterval)) {
-						metrics = append(metrics, int64(podMetric.Value))
+						metrics = append(metrics, podMetric.Value)
 					}
 				}
 				reached, err = isMetricReached(
@@ -331,7 +332,7 @@ func (mw *k8sMetricWatcher) CheckMetric(ctx context.Context) (bool, error) {
 			}
 			metrics := []int64{}
 			for _, podMetric := range usage {
-				metrics = append(metrics, int64(podMetric.Value))
+				metrics = append(metrics, podMetric.Value)
 			}
 			reached, err := isMetricReached(
 				replicas,
@@ -358,10 +359,7 @@ func (mw *k8sMetricWatcher) CheckMetric(ctx context.Context) (bool, error) {
 				errs = append(errs, err)
 				continue
 			}
-			metrics := []int64{}
-			for _, metric := range usage {
-				metrics = append(metrics, int64(metric))
-			}
+			metrics := usage
 			reached, err := isMetricReached(
 				replicas,
 				metric.External.Target,
@@ -395,7 +393,7 @@ type metricConditionStatus struct {
 }
 
 // update updates the metric condition status
-func (mcs *metricConditionStatus) update(ctx context.Context, currentMetric autoscalingv2.MetricSpec, reached bool) {
+func (mcs *metricConditionStatus) update(_ context.Context, currentMetric autoscalingv2.MetricSpec, reached bool) {
 	defer func() {
 		if len(mcs.currentMetricReachedMetrics) == 0 {
 			mcs.reached = false

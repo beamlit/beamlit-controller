@@ -1,0 +1,51 @@
+name: Linting and testing
+on: [push, pull_request]
+jobs:
+  lint:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+      - name: Lint Go code
+        run: make lint
+      - uses: azure/setup-helm@v4.2.0
+        name: Install Helm
+      - name: Lint Operator Helm chart
+        run: |
+          cd ./chart
+          helm dependency build
+          helm lint .
+          cd ..
+      - name: Lint Gateway Helm chart
+        run: helm lint ./gateway/chart
+  test:
+    name: Testing
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        go-version: [1.23]
+        os: [ubuntu-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Run tests
+        run: make test
+      - uses: azure/setup-helm@v4.2.0
+        name: Install Helm
+      - name: Test Operator Helm chart
+        run: |
+          cd ./chart
+          helm dependency build
+          helm template .
+          cd ..
+      - name: Test Gateway Helm chart
+        run: helm template ./gateway/chart
