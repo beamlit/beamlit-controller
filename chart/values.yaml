@@ -40,7 +40,7 @@ controllerManager:
           - ALL
     # -- image to use for the manager
     image:
-      repository: controller
+      repository: ghcr.io/beamlit/beamlit-controller
       tag: latest
       pullPolicy: IfNotPresent
     # -- resources to request for the manager
@@ -80,7 +80,7 @@ beamlitBaseUrl: "https://api.beamlit.dev/v0"
 
 # -- allowed namespaces
 allowedNamespaces:
-  - beamlit
+  - default
 
 # -- config.yaml options
 config:
@@ -89,11 +89,11 @@ config:
   # -- secure-metrics
   secureMetrics: false
   # -- namespaces
-  namespaces: beamlit
+  namespaces: default
   # -- default-remote-backend
   defaultRemoteBackend:
     # -- host
-    host: "edge-gw.beamlit.net"
+    host: "run.beamlit.dev"
     # -- path-prefix
     pathPrefix: "/$workspace/$model"
     # -- auth-config
@@ -121,8 +121,10 @@ config:
     # -- proxy-service.admin-port
     adminPort: 8081
 
-# -- full install, install the metrics-server along with the controller manager
-fullInstall: true
+# -- installMetricsServer is a flag to install the metrics-server along with the controller
+installMetricServer: false
+# -- installBeamlitGateway is a flag to install the beamlit gateway along with the controller
+installBeamlitGateway: true
 
 # -- metrics-server options
 metrics-server:
