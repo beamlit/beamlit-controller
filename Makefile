@@ -208,6 +208,7 @@ CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen-$(CONTROLLER_TOOLS_VERSION)
 ENVTEST ?= $(LOCALBIN)/setup-envtest-$(ENVTEST_VERSION)
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint-$(GOLANGCI_LINT_VERSION)
 HELM_DOCS ?= $(LOCALBIN)/helm-docs
+CRD_REF_DOCS ?= $(LOCALBIN)/crd-ref-docs
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.3.0
@@ -215,6 +216,7 @@ CONTROLLER_TOOLS_VERSION ?= v0.16.1
 ENVTEST_VERSION ?= release-0.17
 GOLANGCI_LINT_VERSION ?= v1.62.0
 HELMD_DOCS_VERSION ?= v1.14.2
+CRD_REF_DOCS_VERSION ?= v0.1.0
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
@@ -239,6 +241,10 @@ $(GOLANGCI_LINT): $(LOCALBIN)
 .PHONY: helm-docs
 $(HELMD_DOCS): $(LOCALBIN)
 	$(call go-install-tool,$(HELMD_DOCS),github.com/norwoodj/helm-docs/cmd/helm-docs,$(HELMD_DOCS_VERSION))
+
+.PHONY: crd-ref-docs
+$(CRD_REF_DOCS): $(LOCALBIN)
+	$(call go-install-tool,$(CRD_REF_DOCS),github.com/elastic/crd-ref-docs,$(CRD_REF_DOCS_VERSION))
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary (ideally with version)
 # $2 - package url which can be installed
@@ -339,3 +345,7 @@ helm: manifests kustomize helmify
 .PHONY: helm-docs
 helm-docs: $(HELMD_DOCS) ## Generate Helm chart README.md.
 	$(HELMD_DOCS) -c config/helm
+
+.PHONY: crd-ref-docs
+crd-ref-docs: $(CRD_REF_DOCS) ## Generate CRD reference documentation.
+	$(CRD_REF_DOCS) --output-path=docs/crds/ --config=./hack/crd-ref-config.yaml --renderer=markdown
