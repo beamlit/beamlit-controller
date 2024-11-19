@@ -14,7 +14,7 @@ One key benefit is that it allows you to offload your model deployments to Beaml
 ## Table of Contents
 
 - [Installation](#installation)
-- [Usage](#usage)
+- [Getting Started](#getting-started)
 - [Support](#support)
 - [Contributing](#contributing)
 
