@@ -266,7 +266,7 @@ _Appears in:_
 | --- | --- | --- | --- |
 | `model` _string_ | Model is the name of the base model |  | Required: \{\} <br /> |
 | `enabled` _boolean_ | Enabled is the flag to enable the model deployment on Beamlit | true | Optional: \{\} <br /> |
-| `modelSourceRef` _invalid type_ | ModelSourceRef is the reference to the model source<br />This is either a Deployment, StatefulSet... (anything that is a template for a pod) |  | Required: \{\} <br /> |
+| `modelSourceRef` _[ObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#objectreference-v1-core)_ | ModelSourceRef is the reference to the model source<br />This is either a Deployment, StatefulSet... (anything that is a template for a pod) |  | Required: \{\} <br /> |
 | `serviceRef` _[ServiceReference](#servicereference)_ | ServiceRef is the reference to the service exposing the model inside the cluster<br />If not specified, a local service will be created |  | Optional: \{\} <br /> |
 | `metricServiceRef` _[ServiceReference](#servicereference)_ | MetricServiceRef is the reference to the service exposing the metrics inside the cluster<br />If not specified, the model deployment will not be offloaded |  | Optional: \{\} <br /> |
 | `environment` _string_ | Environment is the environment attached to the model deployment<br />If not specified, the model deployment will be deployed in the "prod" environment | production | Optional: \{\} <br /> |
@@ -344,7 +344,7 @@ _Appears in:_
 | Field | Description | Default | Validation |
 | --- | --- | --- | --- |
 | `remoteBackend` _[RemoteBackend](#remotebackend)_ | RemoteBackend is the reference to the remote backend<br />By default, the model deployment will be offloaded to the default backend |  | Optional: \{\} <br /> |
-| `metrics` _invalid type array_ | Metrics is the list of metrics used for offloading | \{  \} | Optional: \{\} <br /> |
+| `metrics` _[MetricSpec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#metricspec-v2-autoscaling) array_ | Metrics is the list of metrics used for offloading | \{  \} | Optional: \{\} <br /> |
 | `behavior` _[OffloadingBehavior](#offloadingbehavior)_ | Behavior is the behavior of the offloading | \{  \} | Optional: \{\} <br /> |
 
 

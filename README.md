@@ -1,7 +1,10 @@
+---
+title: Home
+---
 # Beamlit Controller
 
 <p align="center">
-  <img src="./docs/assets/beamlit-logo.png" alt="Beamlit Controller"/>
+  <img src="assets/beamlit-logo.png" alt="Beamlit Controller"/>
 </p>
 
 ![GitHub License](https://img.shields.io/github/license/beamlit/beamlit-controller)

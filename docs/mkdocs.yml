@@ -1,0 +1,76 @@
+site_name: Controller docs
+repo_url: https://github.com/beamlit/beamlit-controller
+docs_dir: docs
+copyright: Copyright © 2024 Beamlit authors
+nav:
+  - Getting Started: index.md
+  - API Reference:
+      - CRDs: crds/crds-docs.md
+  - Contributing:
+      - Getting Started: developer-guide/getting-started.md
+      - Architecture: developer-guide/architecture.md
+plugins:
+  - search
+  - offline
+  - tags
+  - mermaid2
+  - swagger-ui-tag
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - git-authors
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+extra:
+  homepage: https://beamlit.com
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/beamlit
+      name: GitHub
+exclude_docs: |
+  _*.md
+theme:
+  name: material
+  logo: ./assets/beamlit-logo.png
+  features:
+    - search.suggest
+    - search.highlight
+    - navigation.indexes
+    - navigation.tabs
+    - navigation.tracking
+    - toc.integrate
+    - navigation.top
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - scheme: default
+      primary: white
+      accent: blue
+      media: "(prefers-color-scheme: light)"
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: blue
+      media: "(prefers-color-scheme: dark)"
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to light mode
+  font:
+    text: "Roboto"
+    code: "Roboto Mono"
+
+extra_css:
+  - stylesheets/extra.css
