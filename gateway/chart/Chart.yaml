@@ -1,5 +1,5 @@
 apiVersion: v2
-name: beamlit-gateway
+name: beamlit-gateway-chart
 description: A Helm chart for deploying the beamlit gateway on your Kubernetes cluster
 
 # A chart can be either an 'application' or a 'library' chart.
