@@ -30,5 +30,5 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/beamlit/beamlit-gateway:latest,ghcr.io/beamlit/beamlit-gateway:${{ github.sha }}
+          tags: ghcr.io/beamlit/beamlit-gateway:${{ github.sha }},ghcr.io/beamlit/beamlit-gateway:latest
           file: ./Dockerfile.gateway
