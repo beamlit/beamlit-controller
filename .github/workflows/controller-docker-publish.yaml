@@ -32,5 +32,3 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:latest,ghcr.io/${{ github.repository }}:${{ github.sha }}
           context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
