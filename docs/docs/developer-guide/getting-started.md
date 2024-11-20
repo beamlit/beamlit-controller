@@ -13,44 +13,38 @@ In this guide, we'll go over the development process for the Beamlit Controller.
 ## Setting up the development environment
 
 1. Clone the repository:
-
-```bash
-git clone https://github.com/beamlit/beamlit-controller.git
-cd beamlit-controller
-```
+  ```bash
+  git clone https://github.com/beamlit/beamlit-controller.git
+  cd beamlit-controller
+  ```
 
 2. Build the gateway Docker image:
-
-```bash
-docker build -t beamlit/gateway:dev -f Dockerfile.gateway .
-```
+  ```bash
+  docker build -t beamlit/gateway:dev -f Dockerfile.gateway .
+  ```
 
 3. Build the controller Docker image:
-
-```bash
-docker build -t beamlit/operator:dev -f Dockerfile .
-```
+  ```bash
+  docker build -t beamlit/operator:dev -f Dockerfile .
+  ```
 
 4. Create a local Kubernetes cluster using KinD:
-
-```bash
-kind create cluster
-```
+  ```bash
+  kind create cluster
+  ```
 
 5. Load the Docker images into the KinD cluster:
-
-```bash
-kind load docker-image beamlit/gateway:dev
-kind load docker-image beamlit/operator:dev
-```
+  ```bash
+  kind load docker-image beamlit/gateway:dev
+  kind load docker-image beamlit/operator:dev
+  ```
 
 6. Modify the Helm chart to use the local images and run:
-
-```bash
-cd chart
-helm dependency build
-helm install beamlit-controller .
-```
+  ```bash
+  cd chart
+  helm dependency build
+  helm install beamlit-controller .
+  ```
 
 ## Testing
 

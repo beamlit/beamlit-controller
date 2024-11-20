@@ -1,6 +1,6 @@
 # Offloading Metric
 
-The offloading metric is a customizable infrastructure metric used by the Beamlit controller to trigger [model offloading](https://www.notion.so/Model-overflow-13847e47b1ea817f82a8c8bda522126f?pvs=21) when it hits a certain threshold.
+The offloading metric is a customizable infrastructure metric used by the Beamlit controller to trigger [model offloading](https://docs.beamlit.com/Models/Cloud-Burst-Network/Model-overflow) when it hits a certain threshold.
 
 Currently, Beamlit supports two ways to retrieve metrics:
 
@@ -40,7 +40,7 @@ where:
 ### Prerequisites
 
 - A [Prometheus](https://github.com/prometheus/prometheus) server that is either in your Kubernetes cluster, or accessible in your network via URL without authentication.
-- Set up the [Beamlit controller](https://www.notion.so/Install-Beamlit-operator-13847e47b1ea81dab2eefb5694f621ef?pvs=21) to monitor your Prometheus service by adding the following configuration in the controller’s `values.yaml` :
+- Set up the [Beamlit controller](/admin-guide/getting-started.html) to monitor your Prometheus service by adding the following configuration in the controller’s `values.yaml` :
 
 ```yaml
 config:
