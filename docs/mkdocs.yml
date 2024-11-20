@@ -4,9 +4,16 @@ docs_dir: docs
 copyright: Copyright © 2024 Beamlit authors
 nav:
   - Getting Started: index.md
+  - User Guide:
+      - Core Resources: user-guide/core-resources.md
+      - Offloading Metric: user-guide/offloading-metric.md
+  - Administrator Guide:
+      - Getting Started:
+          - What is the Beamlit Controller?: admin-guide/getting-started.md
+          - Deploy using Helm: admin-guide/deploy-helm.md
   - API Reference:
       - CRDs: crds/crds-docs.md
-  - Contributing:
+  - Developer Guide:
       - Getting Started: developer-guide/getting-started.md
       - Architecture: developer-guide/architecture.md
 plugins:
@@ -26,6 +33,9 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - admonition
+  - markdown_include.include:
+      base_path: ../
 extra:
   homepage: https://beamlit.com
   generator: false

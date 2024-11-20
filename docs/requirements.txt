@@ -6,3 +6,4 @@ mkdocs-git-revision-date-localized-plugin~=1.2
 mkdocs-git-authors-plugin~=0.1
 mkdocs-mermaid2-plugin~=1.1
 mkdocs-swagger-ui-tag~=0.6
+markdown-include~=0.8
