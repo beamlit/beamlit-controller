@@ -95,7 +95,7 @@ config:
     # -- host
     host: "run.beamlit.dev"
     # -- path-prefix
-    pathPrefix: "/$workspace/$model"
+    pathPrefix: "/$workspace/models/$model"
     # -- auth-config
     authConfig:
       # -- type
