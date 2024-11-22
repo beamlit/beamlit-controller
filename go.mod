@@ -3,6 +3,7 @@ module github.com/beamlit/beamlit-controller
 go 1.23.2
 
 require (
+	github.com/beamlit/toolkit v0.0.0-20241122142729-9f5df2b0ce52
 	github.com/golangci/golangci-lint v1.61.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onsi/ginkgo/v2 v2.20.2
@@ -11,7 +12,6 @@ require (
 	github.com/prometheus/common v0.55.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
-	github.com/tmp-moon/toolkit v0.0.0-20241031220256-d55f29720749
 	go.uber.org/mock v0.4.0
 	golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e
 	golang.org/x/oauth2 v0.22.0

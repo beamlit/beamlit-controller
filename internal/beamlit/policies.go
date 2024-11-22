@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	beamlit "github.com/tmp-moon/toolkit/sdk"
+	beamlit "github.com/beamlit/toolkit/sdk"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -15,7 +15,19 @@ func (c *Client) CreateOrUpdatePolicy(ctx context.Context, policy beamlit.Policy
 	if policy.Name == nil {
 		return nil, fmt.Errorf("policy name is required")
 	}
-	resp, err := c.client.PutPolicy(ctx, *policy.Name, policy)
+	policyResp, err := c.client.GetPolicy(ctx, *policy.Name)
+	if err != nil {
+		return nil, err
+	}
+	var resp *http.Response
+	switch policyResp.StatusCode {
+	case http.StatusNotFound:
+		resp, err = c.client.CreatePolicy(ctx, policy)
+	case http.StatusOK:
+		resp, err = c.client.UpdatePolicy(ctx, *policy.Name, policy)
+	default:
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -25,7 +25,7 @@ In this guide, we'll go over the development process for the Beamlit Controller.
 
 3. Build the controller Docker image:
   ```bash
-  docker build -t beamlit/operator:dev -f Dockerfile .
+  docker build -t beamlit/controller:dev -f Dockerfile .
   ```
 
 4. Create a local Kubernetes cluster using KinD:
@@ -36,7 +36,7 @@ In this guide, we'll go over the development process for the Beamlit Controller.
 5. Load the Docker images into the KinD cluster:
   ```bash
   kind load docker-image beamlit/gateway:dev
-  kind load docker-image beamlit/operator:dev
+  kind load docker-image beamlit/controller:dev
   ```
 
 6. Modify the Helm chart to use the local images and run:
@@ -56,7 +56,7 @@ make test
 
 ## Code generation
 
-The operator uses controller-gen to generate the CRD and webhook manifests. To generate the manifests, run:
+The controller uses controller-gen to generate the CRD and webhook manifests. To generate the manifests, run:
 
 ```bash
 make generate

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	beamlit "github.com/tmp-moon/toolkit/sdk"
+	beamlit "github.com/beamlit/toolkit/sdk"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
