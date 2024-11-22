@@ -17,13 +17,13 @@ Beamlit Proxy is part of the [Beamlit Operator](https://github.com/beamlit/beaml
 ## Build
 
 ```
-docker build -t beamlit/beamlit-proxy:latest .
+docker build -t beamlit/beamlit-gateway:latest .
 ```
 
 ## Run
 
 ```
-docker run -p 8080:8080 -p 8081:8081 beamlit/beamlit-proxy:latest
+docker run -p 8080:8080 -p 8081:8081 beamlit/beamlit-gateway:latest
 ```
 
 ## API

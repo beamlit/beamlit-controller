@@ -92,11 +92,11 @@ func toBeamlitLabels(labels map[string]string, opts ...func(labels map[string]st
 	for key, value := range labels {
 		beamlitLabels[key] = value
 	}
-	labels["managed-by"] = "beamlit-operator"
+	beamlitLabels["managed-by"] = "beamlit-operator"
 	for _, opt := range opts {
-		opt(labels)
+		opt(beamlitLabels)
 	}
-	return labels
+	return beamlitLabels
 }
 
 func toBeamlitPolicies(policies []modelv1alpha1.PolicyRef) *[]string {
