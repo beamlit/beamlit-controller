@@ -43,6 +43,8 @@ github.com/ashanbrown/forbidigo v1.6.0 h1:D3aewfM37Yb3pxHujIPSpTf6oQk9sc9WZi8ger
 github.com/ashanbrown/forbidigo v1.6.0/go.mod h1:Y8j9jy9ZYAEHXdu723cUlraTqbzjKF1MUyfOKL+AjcU=
 github.com/ashanbrown/makezero v1.1.1 h1:iCQ87C0V0vSyO+M9E/FZYbu65auqH0lnsOkf5FcB28s=
 github.com/ashanbrown/makezero v1.1.1/go.mod h1:i1bJLCRSCHOcOa9Y6MyF2FTfMZMFdHvxKHxgO5Z1axI=
+github.com/beamlit/toolkit v0.0.0-20241122142729-9f5df2b0ce52 h1:g8UEL5h60lRKyu30XpYpLNRBziNY7vjQAhLSeaqUN78=
+github.com/beamlit/toolkit v0.0.0-20241122142729-9f5df2b0ce52/go.mod h1:oe6S6QpcOOzVaDdQ2DjNRTh1Me7RgXj87NqM/zyZgwo=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bkielbasa/cyclop v1.2.1 h1:AeF71HZDob1P2/pRm1so9cd1alZnrpyc4q2uP2l0gJY=
@@ -445,8 +447,6 @@ github.com/timakin/bodyclose v0.0.0-20230421092635-574207250966 h1:quvGphlmUVU+n
 github.com/timakin/bodyclose v0.0.0-20230421092635-574207250966/go.mod h1:27bSVNWSBOHm+qRp1T9qzaIpsWEP6TbUnei/43HK+PQ=
 github.com/timonwong/loggercheck v0.9.4 h1:HKKhqrjcVj8sxL7K77beXh0adEm6DLjV/QOGeMXEVi4=
 github.com/timonwong/loggercheck v0.9.4/go.mod h1:caz4zlPcgvpEkXgVnAJGowHAMW2NwHaNlpS8xDbVhTg=
-github.com/tmp-moon/toolkit v0.0.0-20241031220256-d55f29720749 h1:Fq2VRU3OA6V7uPYSBhWfCI5jAJRLcu5budxHbGoCY38=
-github.com/tmp-moon/toolkit v0.0.0-20241031220256-d55f29720749/go.mod h1:/6/Ba4CwQjrchioyweYonC/ck1QHbZ2f4Wr26uItcQ8=
 github.com/tomarrell/wrapcheck/v2 v2.9.0 h1:801U2YCAjLhdN8zhZ/7tdjB3EnAoRlJHt/s+9hijLQ4=
 github.com/tomarrell/wrapcheck/v2 v2.9.0/go.mod h1:g9vNIyhb5/9TQgumxQyOEqDHsmGYcGsVMOx/xGkqdMo=
 github.com/tommy-muehle/go-mnd/v2 v2.5.1 h1:NowYhSdyE/1zwK9QCLeRb6USWdoif80Ie+v+yU8u1Zw=

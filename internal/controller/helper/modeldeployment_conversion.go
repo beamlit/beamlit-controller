@@ -20,8 +20,8 @@ import (
 	"context"
 	"strconv"
 
+	beamlit "github.com/beamlit/toolkit/sdk"
 	"github.com/mitchellh/mapstructure"
-	beamlit "github.com/tmp-moon/toolkit/sdk"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	beamlit "github.com/tmp-moon/toolkit/sdk"
+	beamlit "github.com/beamlit/toolkit/sdk"
 )
 
 const (

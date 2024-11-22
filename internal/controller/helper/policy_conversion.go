@@ -2,7 +2,7 @@ package helper
 
 import (
 	authorizationv1alpha1 "github.com/beamlit/beamlit-controller/api/v1alpha1/authorization"
-	beamlit "github.com/tmp-moon/toolkit/sdk"
+	beamlit "github.com/beamlit/toolkit/sdk"
 )
 
 func ToBeamlitPolicy(policy *authorizationv1alpha1.Policy) *beamlit.Policy {
