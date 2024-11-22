@@ -18,8 +18,8 @@ A Helm chart to deploy beamlit controller on your Kubernetes cluster
 | allowedNamespaces | list | `["default"]` | allowed namespaces |
 | beamlitApiToken | string | `"REPLACE_ME"` | beamlit api token |
 | beamlitBaseUrl | string | `"https://api.beamlit.dev/v0"` | beamlit base url |
-| config | object | `{"defaultRemoteBackend":{"authConfig":{"oauthConfig":{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"},"type":"oauth"},"host":"run.beamlit.dev","pathPrefix":"/$workspace/$model","scheme":"https"},"enableHTTP2":false,"namespaces":"default","proxyService":{"adminPort":8081,"name":"proxy-beamlit-gateway","namespace":"beamlit","port":8080},"secureMetrics":false}` | config.yaml options |
-| config.defaultRemoteBackend | object | `{"authConfig":{"oauthConfig":{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"},"type":"oauth"},"host":"run.beamlit.dev","pathPrefix":"/$workspace/$model","scheme":"https"}` | default-remote-backend |
+| config | object | `{"defaultRemoteBackend":{"authConfig":{"oauthConfig":{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"},"type":"oauth"},"host":"run.beamlit.dev","pathPrefix":"/$workspace/models/$model","scheme":"https"},"enableHTTP2":false,"namespaces":"default","proxyService":{"adminPort":8081,"name":"beamlit-gateway","namespace":"default","port":8080},"secureMetrics":false}` | config.yaml options |
+| config.defaultRemoteBackend | object | `{"authConfig":{"oauthConfig":{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"},"type":"oauth"},"host":"run.beamlit.dev","pathPrefix":"/$workspace/models/$model","scheme":"https"}` | default-remote-backend |
 | config.defaultRemoteBackend.authConfig | object | `{"oauthConfig":{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"},"type":"oauth"}` | auth-config |
 | config.defaultRemoteBackend.authConfig.oauthConfig | object | `{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"}` | oauth2 |
 | config.defaultRemoteBackend.authConfig.oauthConfig.clientId | string | `"REPLACE_ME"` | client-id |
@@ -27,14 +27,14 @@ A Helm chart to deploy beamlit controller on your Kubernetes cluster
 | config.defaultRemoteBackend.authConfig.oauthConfig.tokenUrl | string | `"https://api.beamlit.dev/v0/oauth/token"` | token-url |
 | config.defaultRemoteBackend.authConfig.type | string | `"oauth"` | type |
 | config.defaultRemoteBackend.host | string | `"run.beamlit.dev"` | host |
-| config.defaultRemoteBackend.pathPrefix | string | `"/$workspace/$model"` | path-prefix |
+| config.defaultRemoteBackend.pathPrefix | string | `"/$workspace/models/$model"` | path-prefix |
 | config.defaultRemoteBackend.scheme | string | `"https"` | scheme |
 | config.enableHTTP2 | bool | `false` | enable-http2 |
 | config.namespaces | string | `"default"` | namespaces |
-| config.proxyService | object | `{"adminPort":8081,"name":"proxy-beamlit-gateway","namespace":"beamlit","port":8080}` | proxy-service |
+| config.proxyService | object | `{"adminPort":8081,"name":"beamlit-gateway","namespace":"default","port":8080}` | proxy-service |
 | config.proxyService.adminPort | int | `8081` | proxy-service.admin-port |
-| config.proxyService.name | string | `"proxy-beamlit-gateway"` | proxy-service.name |
-| config.proxyService.namespace | string | `"beamlit"` | proxy-service.namespace |
+| config.proxyService.name | string | `"beamlit-gateway"` | proxy-service.name |
+| config.proxyService.namespace | string | `"default"` | proxy-service.namespace |
 | config.proxyService.port | int | `8080` | proxy-service.port |
 | config.secureMetrics | bool | `false` | secure-metrics |
 | controllerManager.kubeRbacProxy | object | `{"args":["--secure-listen-address=0.0.0.0:8443","--upstream=http://127.0.0.1:8080/","--logtostderr=true","--v=0"],"containerSecurityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}},"image":{"repository":"gcr.io/kubebuilder/kube-rbac-proxy","tag":"v0.16.0"},"resources":{"limits":{"cpu":"500m","memory":"128Mi"},"requests":{"cpu":"5m","memory":"64Mi"}}}` | kube-rbac-proxy options |
