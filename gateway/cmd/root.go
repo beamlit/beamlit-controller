@@ -12,7 +12,7 @@ var (
 	cfgFile string
 
 	rootCmd = &cobra.Command{
-		Use: "beamlit-proxy",
+		Use: "beamlit-gateway",
 	}
 )
 
@@ -23,7 +23,7 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $PWD/beamlit-proxy.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $PWD/beamlit-gateway.yaml)")
 	registerFlags()
 
 	rootCmd.AddCommand(runCmd)
@@ -38,10 +38,10 @@ func initConfig() {
 		cwd, err := os.Getwd()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name "beamlit-proxy" (without extension).
+		// Search config in home directory with name "beamlit-gateway" (without extension).
 		viper.AddConfigPath(cwd)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName("beamlit-proxy")
+		viper.SetConfigName("beamlit-gateway")
 	}
 
 	viper.AutomaticEnv()

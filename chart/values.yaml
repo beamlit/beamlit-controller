@@ -113,9 +113,9 @@ config:
   # -- proxy-service
   proxyService:
     # -- proxy-service.namespace
-    namespace: beamlit
+    namespace: default
     # -- proxy-service.name
-    name: proxy-beamlit-proxy
+    name: beamlit-gateway
     # -- proxy-service.port
     port: 8080
     # -- proxy-service.admin-port

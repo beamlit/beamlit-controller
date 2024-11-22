@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "beamlit-proxy.fullname" . }}
+  name: {{ include "beamlit-gateway.fullname" . }}
   labels:
-    {{- include "beamlit-proxy.labels" . | nindent 4 }}
+    {{- include "beamlit-gateway.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "beamlit-proxy.selectorLabels" . | nindent 6 }}
+      {{- include "beamlit-gateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -16,7 +16,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "beamlit-proxy.labels" . | nindent 8 }}
+        {{- include "beamlit-gateway.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -25,7 +25,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "beamlit-proxy.serviceAccountName" . }}
+      serviceAccountName: {{ include "beamlit-gateway.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -35,7 +35,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
-            - /beamlit-proxy
+            - /beamlit-gateway
           args:
             - run
             - --listen-addr=:{{ .Values.service.proxyPort }}

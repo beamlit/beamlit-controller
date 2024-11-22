@@ -18,7 +18,7 @@ A Helm chart to deploy beamlit controller on your Kubernetes cluster
 | allowedNamespaces | list | `["default"]` | allowed namespaces |
 | beamlitApiToken | string | `"REPLACE_ME"` | beamlit api token |
 | beamlitBaseUrl | string | `"https://api.beamlit.dev/v0"` | beamlit base url |
-| config | object | `{"defaultRemoteBackend":{"authConfig":{"oauthConfig":{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"},"type":"oauth"},"host":"run.beamlit.dev","pathPrefix":"/$workspace/$model","scheme":"https"},"enableHTTP2":false,"namespaces":"default","proxyService":{"adminPort":8081,"name":"proxy-beamlit-proxy","namespace":"beamlit","port":8080},"secureMetrics":false}` | config.yaml options |
+| config | object | `{"defaultRemoteBackend":{"authConfig":{"oauthConfig":{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"},"type":"oauth"},"host":"run.beamlit.dev","pathPrefix":"/$workspace/$model","scheme":"https"},"enableHTTP2":false,"namespaces":"default","proxyService":{"adminPort":8081,"name":"proxy-beamlit-gateway","namespace":"beamlit","port":8080},"secureMetrics":false}` | config.yaml options |
 | config.defaultRemoteBackend | object | `{"authConfig":{"oauthConfig":{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"},"type":"oauth"},"host":"run.beamlit.dev","pathPrefix":"/$workspace/$model","scheme":"https"}` | default-remote-backend |
 | config.defaultRemoteBackend.authConfig | object | `{"oauthConfig":{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"},"type":"oauth"}` | auth-config |
 | config.defaultRemoteBackend.authConfig.oauthConfig | object | `{"clientId":"REPLACE_ME","clientSecret":"REPLACE_ME","tokenUrl":"https://api.beamlit.dev/v0/oauth/token"}` | oauth2 |
@@ -31,9 +31,9 @@ A Helm chart to deploy beamlit controller on your Kubernetes cluster
 | config.defaultRemoteBackend.scheme | string | `"https"` | scheme |
 | config.enableHTTP2 | bool | `false` | enable-http2 |
 | config.namespaces | string | `"default"` | namespaces |
-| config.proxyService | object | `{"adminPort":8081,"name":"proxy-beamlit-proxy","namespace":"beamlit","port":8080}` | proxy-service |
+| config.proxyService | object | `{"adminPort":8081,"name":"proxy-beamlit-gateway","namespace":"beamlit","port":8080}` | proxy-service |
 | config.proxyService.adminPort | int | `8081` | proxy-service.admin-port |
-| config.proxyService.name | string | `"proxy-beamlit-proxy"` | proxy-service.name |
+| config.proxyService.name | string | `"proxy-beamlit-gateway"` | proxy-service.name |
 | config.proxyService.namespace | string | `"beamlit"` | proxy-service.namespace |
 | config.proxyService.port | int | `8080` | proxy-service.port |
 | config.secureMetrics | bool | `false` | secure-metrics |
