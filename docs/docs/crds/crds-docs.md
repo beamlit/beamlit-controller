@@ -32,7 +32,7 @@ _Appears in:_
 | `kind` _string_ | `Policy` | | |
 | `kind` _string_ | Kind is a string value representing the REST resource this object represents.<br />Servers may infer this from the endpoint the client submits requests to.<br />Cannot be updated.<br />In CamelCase.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds |  |  |
 | `apiVersion` _string_ | APIVersion defines the versioned schema of this representation of an object.<br />Servers should convert recognized schemas to the latest internal value, and<br />may reject unrecognized values.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources |  |  |
-| `metadata` _[ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#objectmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
+| `metadata` _[ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#objectmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
 | `spec` _[PolicySpec](#policyspec)_ |  |  |  |
 | `status` _[PolicyStatus](#policystatus)_ |  |  |  |
 
@@ -70,7 +70,7 @@ PolicyList contains a list of Policy
 | `kind` _string_ | `PolicyList` | | |
 | `kind` _string_ | Kind is a string value representing the REST resource this object represents.<br />Servers may infer this from the endpoint the client submits requests to.<br />Cannot be updated.<br />In CamelCase.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds |  |  |
 | `apiVersion` _string_ | APIVersion defines the versioned schema of this representation of an object.<br />Servers should convert recognized schemas to the latest internal value, and<br />may reject unrecognized values.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources |  |  |
-| `metadata` _[ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#listmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
+| `metadata` _[ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#listmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
 | `items` _[Policy](#policy) array_ |  |  |  |
 
 
@@ -123,8 +123,8 @@ _Appears in:_
 
 | Field | Description | Default | Validation |
 | --- | --- | --- | --- |
-| `createdAtOnBeamlit` _[Time](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#time-v1-meta)_ | CreatedAtOnBeamlit is the time when the policy was created on Beamlit |  |  |
-| `updatedAtOnBeamlit` _[Time](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#time-v1-meta)_ | UpdatedAtOnBeamlit is the time when the policy was updated on Beamlit |  |  |
+| `createdAtOnBeamlit` _[Time](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#time-v1-meta)_ | CreatedAtOnBeamlit is the time when the policy was created on Beamlit |  |  |
+| `updatedAtOnBeamlit` _[Time](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#time-v1-meta)_ | UpdatedAtOnBeamlit is the time when the policy was updated on Beamlit |  |  |
 | `workspace` _string_ | Workspace is the workspace of the policy |  |  |
 
 
@@ -226,7 +226,7 @@ _Appears in:_
 | `kind` _string_ | `ModelDeployment` | | |
 | `kind` _string_ | Kind is a string value representing the REST resource this object represents.<br />Servers may infer this from the endpoint the client submits requests to.<br />Cannot be updated.<br />In CamelCase.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds |  |  |
 | `apiVersion` _string_ | APIVersion defines the versioned schema of this representation of an object.<br />Servers should convert recognized schemas to the latest internal value, and<br />may reject unrecognized values.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources |  |  |
-| `metadata` _[ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#objectmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
+| `metadata` _[ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#objectmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
 | `spec` _[ModelDeploymentSpec](#modeldeploymentspec)_ |  |  |  |
 | `status` _[ModelDeploymentStatus](#modeldeploymentstatus)_ |  |  |  |
 
@@ -247,7 +247,7 @@ ModelDeploymentList contains a list of ModelDeployment
 | `kind` _string_ | `ModelDeploymentList` | | |
 | `kind` _string_ | Kind is a string value representing the REST resource this object represents.<br />Servers may infer this from the endpoint the client submits requests to.<br />Cannot be updated.<br />In CamelCase.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds |  |  |
 | `apiVersion` _string_ | APIVersion defines the versioned schema of this representation of an object.<br />Servers should convert recognized schemas to the latest internal value, and<br />may reject unrecognized values.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources |  |  |
-| `metadata` _[ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#listmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
+| `metadata` _[ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#listmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
 | `items` _[ModelDeployment](#modeldeployment) array_ |  |  |  |
 
 
@@ -266,7 +266,7 @@ _Appears in:_
 | --- | --- | --- | --- |
 | `model` _string_ | Model is the name of the base model |  | Required: \{\} <br /> |
 | `enabled` _boolean_ | Enabled is the flag to enable the model deployment on Beamlit | true | Optional: \{\} <br /> |
-| `modelSourceRef` _[ObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#objectreference-v1-core)_ | ModelSourceRef is the reference to the model source<br />This is either a Deployment, StatefulSet... (anything that is a template for a pod) |  | Required: \{\} <br /> |
+| `modelSourceRef` _[ObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#objectreference-v1-core)_ | ModelSourceRef is the reference to the model source<br />This is either a Deployment, StatefulSet... (anything that is a template for a pod) |  | Required: \{\} <br /> |
 | `serviceRef` _[ServiceReference](#servicereference)_ | ServiceRef is the reference to the service exposing the model inside the cluster<br />If not specified, a local service will be created |  | Optional: \{\} <br /> |
 | `metricServiceRef` _[ServiceReference](#servicereference)_ | MetricServiceRef is the reference to the service exposing the metrics inside the cluster<br />If not specified, the model deployment will not be offloaded |  | Optional: \{\} <br /> |
 | `environment` _string_ | Environment is the environment attached to the model deployment<br />If not specified, the model deployment will be deployed in the "prod" environment | production | Optional: \{\} <br /> |
@@ -292,8 +292,8 @@ _Appears in:_
 | `servingPort` _integer_ | ServingPort is the port inside the pod that the model is served on |  |  |
 | `metricPort` _integer_ | MetricPort is the port inside the pod that the metrics are exposed on |  |  |
 | `workspace` _string_ | Workspace is the workspace of the model deployment |  |  |
-| `createdAtOnBeamlit` _[Time](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#time-v1-meta)_ | CreatedAtOnBeamlit is the time when the model deployment was created on Beamlit |  |  |
-| `updatedAtOnBeamlit` _[Time](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#time-v1-meta)_ | UpdatedAtOnBeamlit is the time when the model deployment was updated on Beamlit |  |  |
+| `createdAtOnBeamlit` _[Time](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#time-v1-meta)_ | CreatedAtOnBeamlit is the time when the model deployment was created on Beamlit |  |  |
+| `updatedAtOnBeamlit` _[Time](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#time-v1-meta)_ | UpdatedAtOnBeamlit is the time when the model deployment was updated on Beamlit |  |  |
 
 
 #### OAuthConfig
@@ -344,7 +344,7 @@ _Appears in:_
 | Field | Description | Default | Validation |
 | --- | --- | --- | --- |
 | `remoteBackend` _[RemoteBackend](#remotebackend)_ | RemoteBackend is the reference to the remote backend<br />By default, the model deployment will be offloaded to the default backend |  | Optional: \{\} <br /> |
-| `metrics` _[MetricSpec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#metricspec-v2-autoscaling) array_ | Metrics is the list of metrics used for offloading | \{  \} | Optional: \{\} <br /> |
+| `metrics` _[MetricSpec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#metricspec-v2-autoscaling) array_ | Metrics is the list of metrics used for offloading | \{  \} | Optional: \{\} <br /> |
 | `behavior` _[OffloadingBehavior](#offloadingbehavior)_ | Behavior is the behavior of the offloading | \{  \} | Optional: \{\} <br /> |
 
 
@@ -475,7 +475,7 @@ _Appears in:_
 | `kind` _string_ | `ToolDeployment` | | |
 | `kind` _string_ | Kind is a string value representing the REST resource this object represents.<br />Servers may infer this from the endpoint the client submits requests to.<br />Cannot be updated.<br />In CamelCase.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds |  |  |
 | `apiVersion` _string_ | APIVersion defines the versioned schema of this representation of an object.<br />Servers should convert recognized schemas to the latest internal value, and<br />may reject unrecognized values.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources |  |  |
-| `metadata` _[ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#objectmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
+| `metadata` _[ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#objectmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
 | `spec` _[ToolDeploymentSpec](#tooldeploymentspec)_ |  |  |  |
 | `status` _[ToolDeploymentStatus](#tooldeploymentstatus)_ |  |  |  |
 
@@ -496,7 +496,7 @@ ToolDeploymentList contains a list of ToolDeployment
 | `kind` _string_ | `ToolDeploymentList` | | |
 | `kind` _string_ | Kind is a string value representing the REST resource this object represents.<br />Servers may infer this from the endpoint the client submits requests to.<br />Cannot be updated.<br />In CamelCase.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds |  |  |
 | `apiVersion` _string_ | APIVersion defines the versioned schema of this representation of an object.<br />Servers should convert recognized schemas to the latest internal value, and<br />may reject unrecognized values.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources |  |  |
-| `metadata` _[ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.3/#listmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
+| `metadata` _[ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#listmeta-v1-meta)_ | Refer to Kubernetes API documentation for fields of `metadata`. |  |  |
 | `items` _[ToolDeployment](#tooldeployment) array_ |  |  |  |
 
 

@@ -348,4 +348,4 @@ helm-docs: $(HELMD_DOCS) ## Generate Helm chart README.md.
 
 .PHONY: crd-ref-docs
 crd-ref-docs: $(CRD_REF_DOCS) ## Generate CRD reference documentation.
-	$(CRD_REF_DOCS) --output-path=docs/crds/crds-docs.md --config=./hack/crd-ref-config.yaml --renderer=markdown
+	$(CRD_REF_DOCS) --output-path=docs/docs/crds/crds-docs.md --config=./hack/crd-ref-config.yaml --renderer=markdown
