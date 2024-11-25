@@ -15,7 +15,7 @@ import (
 )
 
 func (p *ProxyV1Alpha1) RewriteV1Alpha1(r *httputil.ProxyRequest) {
-	routeName, ok := p.routesPerHost.Load(r.In.Host)
+	routeName, ok := p.routesPerHost.Load(extractHost(r.In.Host))
 	if !ok {
 		r.Out.Response.Status = http.StatusText(http.StatusNotFound)
 		r.Out.Response.StatusCode = http.StatusNotFound
@@ -65,7 +65,7 @@ func handleBackend(r *http.Request, backend v1alpha1.Backend) error {
 	r.URL.Scheme = backend.Scheme
 	r.URL.Host = backend.Host
 
-	r.Host = strings.Split(backend.Host, ":")[0]
+	r.Host = extractHost(backend.Host)
 	for key, value := range backend.HeadersToAdd {
 		r.Header.Add(key, value)
 	}
