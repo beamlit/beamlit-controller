@@ -21,8 +21,8 @@ spec:
     spec:
       volumes:
       - name: config
-        configMap:
-          name: {{ include "chart.fullname" . }}-manager-config
+        secret:
+          secretName: {{ include "chart.fullname" . }}-manager-config
       containers:
       - args: {{- toYaml .Values.controllerManager.kubeRbacProxy.args | nindent 8 }}
         env:
@@ -46,6 +46,7 @@ spec:
         volumeMounts:
         - mountPath: /beamlit/config.yaml
           name: config
+          readOnly: true
           subPath: config.yaml
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
