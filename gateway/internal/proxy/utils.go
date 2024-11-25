@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"strings"
 
 	"github.com/beamlit/beamlit-controller/gateway/api/v1alpha1"
 	"golang.org/x/exp/rand"
@@ -41,4 +42,8 @@ func handleOAuth(ctx context.Context, auth *v1alpha1.Auth) (*oauth2.Token, error
 		return nil, err
 	}
 	return token, nil
+}
+
+func extractHost(h string) string {
+	return strings.Split(h, ":")[0]
 }
