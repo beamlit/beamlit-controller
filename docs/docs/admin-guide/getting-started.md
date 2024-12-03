@@ -34,7 +34,7 @@ It is composed of two components:
 
 !!! warning "Environment variable"
     You need to set `BEAMLIT_TOKEN` env variable to be able to use the Beamlit Controller.
-    This token is used to authenticate with the Beamlit API. It's you `client_id` and `client_secret` concatenated with a colon and then base64 encoded.
+    This token is used to authenticate with the Beamlit API. It's you `clientId` and `clientSecret` concatenated with a colon and then base64 encoded.
     Example: `echo -n $CLIENT_ID:$CLIENT_SECRET | base64`
 
 
