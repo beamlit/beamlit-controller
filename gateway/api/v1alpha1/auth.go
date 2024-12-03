@@ -12,7 +12,7 @@ type Auth struct {
 }
 
 type OAuth struct {
-	ClientID     string `json:"client_id" yaml:"client_id"`
-	ClientSecret string `json:"client_secret" yaml:"client_secret"`
+	ClientID     string `json:"clientId" yaml:"clientId"`
+	ClientSecret string `json:"clientSecret" yaml:"clientSecret"`
 	TokenURL     string `json:"token_url" yaml:"token_url"`
 }
