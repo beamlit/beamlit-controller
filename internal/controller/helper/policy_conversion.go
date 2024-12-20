@@ -7,16 +7,16 @@ import (
 
 func ToBeamlitPolicy(policy *authorizationv1alpha1.Policy) *beamlit.Policy {
 	beamlitPolicy := &beamlit.Policy{}
-	beamlitPolicy.Name = &policy.Name
-	beamlitPolicy.DisplayName = &policy.Spec.DisplayName
+	beamlitPolicy.Metadata.Name = &policy.Name
+	beamlitPolicy.Metadata.DisplayName = &policy.Spec.DisplayName
 	//beamlitPolicy.Labels = toBeamlitLabels(policy.Labels) // TODO: Add this back when we have a way to convert labels to Beamlit labels
 	switch policy.Spec.Type {
 	case authorizationv1alpha1.PolicyTypeFlavor:
-		beamlitPolicy.Type = toPtr("flavor")
-		beamlitPolicy.Flavors = toBeamlitFlavors(policy.Spec.Flavors)
+		beamlitPolicy.Spec.Type = toPtr("flavor")
+		beamlitPolicy.Spec.Flavors = toBeamlitFlavors(policy.Spec.Flavors)
 	case authorizationv1alpha1.PolicyTypeLocation:
-		beamlitPolicy.Type = toPtr("location")
-		beamlitPolicy.Locations = toBeamlitLocations(policy.Spec.Locations)
+		beamlitPolicy.Spec.Type = toPtr("location")
+		beamlitPolicy.Spec.Locations = toBeamlitLocations(policy.Spec.Locations)
 	}
 	return beamlitPolicy
 }

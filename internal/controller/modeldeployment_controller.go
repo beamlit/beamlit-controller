@@ -191,19 +191,19 @@ func (r *ModelDeploymentReconciler) createOrUpdate(ctx context.Context, model *v
 	}
 	r.BeamlitModels[fmt.Sprintf("%s/%s", model.Spec.Environment, model.Spec.Model)] = model.Name
 	logger.V(1).Info("Creating or updating ModelDeployment on Beamlit", "Name", model.Name)
-	updatedModelDeployment, err := r.BeamlitClient.CreateOrUpdateModelDeployment(ctx, beamlitModelDeployment)
+	updatedModelDeployment, err := r.BeamlitClient.CreateOrUpdateModel(ctx, beamlitModelDeployment)
 	if err != nil {
 		logger.V(0).Error(err, "Failed to create or update ModelDeployment on Beamlit")
 		return err
 	}
-	model.Status.Workspace = *updatedModelDeployment.Workspace
-	createdAt, err := time.Parse(time.RFC3339, *updatedModelDeployment.CreatedAt)
+	model.Status.Workspace = *updatedModelDeployment.Metadata.Workspace
+	createdAt, err := time.Parse(time.RFC3339, *updatedModelDeployment.Metadata.CreatedAt)
 	if err != nil {
 		logger.V(0).Error(err, "Failed to parse CreatedAt on Beamlit", "Name", model.Name)
 		return err
 	}
 	model.Status.CreatedAtOnBeamlit = metav1.NewTime(createdAt)
-	updatedAt, err := time.Parse(time.RFC3339, *updatedModelDeployment.UpdatedAt)
+	updatedAt, err := time.Parse(time.RFC3339, *updatedModelDeployment.Metadata.UpdatedAt)
 	if err != nil {
 		logger.V(0).Error(err, "Failed to parse UpdatedAt on Beamlit", "Name", model.Name)
 		return err
