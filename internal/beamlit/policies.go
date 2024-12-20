@@ -12,10 +12,10 @@ import (
 )
 
 func (c *Client) CreateOrUpdatePolicy(ctx context.Context, policy beamlit.Policy) (*beamlit.Policy, error) {
-	if policy.Name == nil {
+	if policy.Metadata.Name == nil {
 		return nil, fmt.Errorf("policy name is required")
 	}
-	policyResp, err := c.client.GetPolicy(ctx, *policy.Name)
+	policyResp, err := c.client.GetPolicy(ctx, *policy.Metadata.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func (c *Client) CreateOrUpdatePolicy(ctx context.Context, policy beamlit.Policy
 	case http.StatusNotFound:
 		resp, err = c.client.CreatePolicy(ctx, policy)
 	case http.StatusOK:
-		resp, err = c.client.UpdatePolicy(ctx, *policy.Name, policy)
+		resp, err = c.client.UpdatePolicy(ctx, *policy.Metadata.Name, policy)
 	default:
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
