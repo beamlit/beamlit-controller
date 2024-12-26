@@ -30,7 +30,7 @@ import (
 
 // Convert converts a ModelDeployment to a Beamlit ModelDeployment
 // It is used by the controller to convert the Kubernetes resource to the Beamlit API resource
-func ToBeamlitModelDeployment(ctx context.Context, kubernetesClient client.Client, modelDeployment *modelv1alpha1.ModelDeployment) (beamlit.ModelDeployment, error) {
+func ToBeamlitModelDeployment(ctx context.Context, kubernetesClient client.Client, modelDeployment *modelv1alpha1.ModelDeployment) (beamlit.Model, error) {
 	logger := log.FromContext(ctx)
 	logger.V(2).Info("Converting ModelDeployment to Beamlit ModelDeployment", "Name", modelDeployment.Name)
 
@@ -39,14 +39,20 @@ func ToBeamlitModelDeployment(ctx context.Context, kubernetesClient client.Clien
 		labelOpts = append(labelOpts, withOffloadingEnabled)
 	}
 
-	beamlitModelDeployment := beamlit.ModelDeployment{
-		Model:       &modelDeployment.Spec.Model,
-		Labels:      toPtr(toBeamlitLabels(modelDeployment.Labels, labelOpts...)),
-		Environment: &modelDeployment.Spec.Environment,
-		Enabled:     toPtr(modelDeployment.Spec.Enabled),
-		MetricPort:  toPtr(int(modelDeployment.Status.MetricPort)),
-		ServingPort: toPtr(int(modelDeployment.Status.ServingPort)),
-		Policies:    toBeamlitPolicies(modelDeployment.Spec.Policies),
+	beamlitModelDeployment := beamlit.Model{
+		Metadata: &beamlit.EnvironmentMetadata{
+			Name:        &modelDeployment.Spec.Model,
+			Environment: &modelDeployment.Spec.Environment,
+			Labels:      toPtr(toBeamlitLabels(modelDeployment.Labels, labelOpts...)),
+		},
+		Spec: &beamlit.ModelSpec{
+			Enabled: toPtr(modelDeployment.Spec.Enabled),
+			Runtime: &beamlit.Runtime{
+				ServingPort: toPtr(int(modelDeployment.Status.ServingPort)),
+				MetricPort:  toPtr(int(modelDeployment.Status.MetricPort)),
+			},
+			Policies: toBeamlitPolicies(modelDeployment.Spec.Policies),
+		},
 	}
 
 	if modelDeployment.Spec.ServerlessConfig != nil {
@@ -54,7 +60,7 @@ func ToBeamlitModelDeployment(ctx context.Context, kubernetesClient client.Clien
 		if modelDeployment.Spec.ServerlessConfig.ScaleUpMinimum != nil {
 			scaleUpMinimum = toPtr(int(*modelDeployment.Spec.ServerlessConfig.ScaleUpMinimum))
 		}
-		beamlitModelDeployment.ServerlessConfig = &beamlit.DeploymentServerlessConfig{
+		beamlitModelDeployment.Spec.ServerlessConfig = &beamlit.ServerlessConfig{
 			MinNumReplicas:         toPtr(int(modelDeployment.Spec.ServerlessConfig.MinNumReplicas)),
 			MaxNumReplicas:         toPtr(int(modelDeployment.Spec.ServerlessConfig.MaxNumReplicas)),
 			Metric:                 modelDeployment.Spec.ServerlessConfig.Metric,
@@ -70,15 +76,15 @@ func ToBeamlitModelDeployment(ctx context.Context, kubernetesClient client.Clien
 	template, err := retrievePodTemplate(ctx, kubernetesClient, modelDeployment.Spec.ModelSourceRef.Kind, modelDeployment.Spec.ModelSourceRef.Name, modelDeployment.Spec.ModelSourceRef.Namespace)
 	if err != nil {
 		logger.V(0).Error(err, "Failed to convert pod template to Beamlit pod template", "Name", modelDeployment.Name)
-		return beamlit.ModelDeployment{}, err
+		return beamlit.Model{}, err
 	}
 	logger.V(2).Info("Successfully converted pod template to Beamlit pod template", "Name", modelDeployment.Name)
 	var podTemplate map[string]interface{} // TODO: Use a better type
 	if err := mapstructure.Decode(template, &podTemplate); err != nil {
 		logger.V(0).Error(err, "Failed to convert pod template to Beamlit pod template", "Name", modelDeployment.Name)
-		return beamlit.ModelDeployment{}, err
+		return beamlit.Model{}, err
 	}
-	beamlitModelDeployment.PodTemplate = &podTemplate
+	beamlitModelDeployment.Spec.PodTemplate = &podTemplate
 	logger.V(2).Info("Successfully converted ModelDeployment to Beamlit ModelDeployment", "Name", modelDeployment.Name)
 	return beamlitModelDeployment, nil
 }
@@ -87,8 +93,8 @@ func withOffloadingEnabled(labels map[string]string) {
 	labels["offloading-enabled"] = strconv.FormatBool(true)
 }
 
-func toBeamlitLabels(labels map[string]string, opts ...func(labels map[string]string)) beamlit.Labels {
-	beamlitLabels := make(beamlit.Labels)
+func toBeamlitLabels(labels map[string]string, opts ...func(labels map[string]string)) beamlit.MetadataLabels {
+	beamlitLabels := make(beamlit.MetadataLabels)
 	for key, value := range labels {
 		beamlitLabels[key] = value
 	}

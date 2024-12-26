@@ -136,7 +136,7 @@ func (r *PolicyReconciler) createOrUpdate(ctx context.Context, policy *authoriza
 	if err != nil {
 		return err
 	}
-	policy.Status.Workspace = *beamlitPolicy.Workspace
+	policy.Status.Workspace = *beamlitPolicy.Metadata.Workspace
 	return nil
 }
 
