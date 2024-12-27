@@ -76,7 +76,7 @@ metricsService:
 # -- beamlit api token
 beamlitApiToken: "REPLACE_ME"
 # -- beamlit base url
-beamlitBaseUrl: "https://api.beamlit.dev/v0"
+beamlitBaseUrl: "https://api.beamlit.com/v0"
 
 # -- allowed namespaces
 allowedNamespaces:
@@ -107,7 +107,7 @@ config:
         # -- client-secret
         clientSecret: "REPLACE_ME"
         # -- token-url
-        tokenUrl: "https://api.beamlit.dev/v0/oauth/token"
+        tokenUrl: "https://api.beamlit.com/v0/oauth/token"
     # -- scheme
     scheme: https
   # -- proxy-service
