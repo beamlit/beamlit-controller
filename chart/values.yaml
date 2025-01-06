@@ -93,7 +93,7 @@ config:
   # -- default-remote-backend
   defaultRemoteBackend:
     # -- host
-    host: "run.beamlit.dev"
+    host: "run.beamlit.com"
     # -- path-prefix
     pathPrefix: "/$workspace/models/$model"
     # -- auth-config
