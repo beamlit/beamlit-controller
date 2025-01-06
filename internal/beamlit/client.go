@@ -10,7 +10,7 @@ import (
 const (
 	envBaseURL     = "BEAMLIT_BASE_URL"
 	envToken       = "BEAMLIT_TOKEN"
-	defaultBaseURL = "https://api.beamlit.dev/v0"
+	defaultBaseURL = "https://api.beamlit.com/v0"
 )
 
 type Client struct {

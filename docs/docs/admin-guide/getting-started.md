@@ -50,7 +50,7 @@ namespaces: default
 # -- default-remote-backend
 defaultRemoteBackend:
   # -- host
-  host: "run.beamlit.dev"
+  host: "run.beamlit.com"
   # -- path-prefix
   pathPrefix: "/$workspace/$model"
   # -- auth-config
@@ -64,7 +64,7 @@ defaultRemoteBackend:
       # -- client-secret
       clientSecret: "REPLACE_ME"
       # -- token-url
-      tokenUrl: "https://api.beamlit.dev/v0/oauth/token"
+      tokenUrl: "https://api.beamlit.com/v0/oauth/token"
   # -- scheme
   scheme: https
 ```
